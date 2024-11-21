@@ -80,9 +80,16 @@ class UART_Tx(UART):
         self.buf_idx = 0
         self.char_start = True
         self.char_stop = False
+        self.stop_bits = 0
+        self.finished = False
 
     def send(self):
         self.t += self.time_step
+
+        if self.char_stop and self.clock_edge():
+            self.stop_bits += 1
+            if self.stop_bits == 2:
+                self.finished = True
 
         if self.char_stop:
             return 1 
@@ -109,6 +116,8 @@ class UART_Tx(UART):
 
     def __init__(self, clock_freq, time_step):
         UART.__init__(self, clock_freq, time_step)
+        self.stop_bits = 0
+        self.finished = False
         
 
 def char_to_buf(char):
@@ -125,25 +134,25 @@ def char_to_buf(char):
 
 
 clock = []
-data = []
-buf = char_to_buf(33)
-tstep = 0.1
-tx = UART_Tx(1, tstep)
-rx = UART_Rx(tx.clock_freq, tx.time_step)
-for i in range(0, int(15 / tstep)):
-    if (i == 10):
-        tx.start(buf)
+# data = []
+# buf = char_to_buf(33)
+# tstep = 0.1
+# tx = UART_Tx(1, tstep)
+# rx = UART_Rx(tx.clock_freq, tx.time_step)
+# for i in range(0, int(15 / tstep)):
+#     if (i == 10):
+#         tx.start(buf)
 
-    clock.append(rx.clock())
-    d = tx.send()
-    data.append(d)
-    d = rx.recv(d)
+#     clock.append(rx.clock())
+#     d = tx.send()
+#     data.append(d)
+#     d = rx.recv(d)
 
-print(rx.buf)
-print(buf)
+# print(rx.buf)
+# print(buf)
 
-import matplotlib.pyplot as plt
-plt.plot(clock)
-plt.plot(data)
+# import matplotlib.pyplot as plt
+# plt.plot(clock)
+# plt.plot(data)
 
-plt.show()
+# plt.show()

@@ -7,7 +7,7 @@ see LICENSE file.
 
 """
 
-import sys
+import uart
 
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtWidgets
