@@ -17,9 +17,8 @@ class UART:
         self.prev = 1
         self.buf_idx = 0
         self.bits_per_char = 8
-        self.buf = np.zeros(self.bits_per_char)
+        self.buf = np.zeros(self.bits_per_char)     
 
-        
 
 class UART_Rx(UART):
     
@@ -39,14 +38,16 @@ class UART_Rx(UART):
     # return None if byte not read, byte if read
     def recv(self, signal):
         self.t += self.time_step
-        if not self.clock_edge or not self.char_start:
+        if not self.clock_edge:
             return None
-        
+
         prev = self.prev
         self.prev = signal
 
         if self.check_start(signal, prev):
             self.char_start = True
+            return None
+        if not self.char_start:
             return None
         
         if self.check_stop(signal, prev):
@@ -55,7 +56,9 @@ class UART_Rx(UART):
 
             return self.buf_idx 
 
-        self.buf[self.buf_idx] = signal
+        if (self.buf_idx < self.bits_per_char):
+            self.buf[self.buf_idx] = signal
+        self.buf_idx += 1
 
     def __init__(self, clock_freq, time_step):
         UART.__init__(self, clock_freq, time_step)
@@ -98,22 +101,33 @@ class UART_Tx(UART):
         UART.__init__(self, clock_freq, time_step)
         
 
+def char_to_buf(char):
+    buf = np.zeros(8)
 
-# uart = UART(1, 0.1)
-# for i in range(100):
-#     print(f"{uart.t}: ", end='')
-#     print(uart.clock())
-#     uart.t += 0.1
+    for i in range(len(buf)):
+        pv = 2 ** (7-i)
+        buf[i] = char // pv
+        if char // pv == 1:
+            char -= pv
+
+    print(buf)
+    return buf
+
 
 clock = []
 data = []
 tx = UART_Tx(1, 0.1)
 rx = UART_Rx(tx.clock_freq, tx.time_step)
-tx.start([0, 1, 1, 1, 0, 1, 1, 0])
-for i in range(0, 100):
+for i in range(0, 150):
+    if (i == 10):
+        tx.start(char_to_buf(200))
+
     clock.append(tx.clock())
     d = tx.send()
     data.append(d)
+    d = rx.recv(d)
+
+print(rx.buf)
 
 import matplotlib.pyplot as plt
 plt.plot(clock)
