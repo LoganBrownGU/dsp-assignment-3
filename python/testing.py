@@ -111,17 +111,18 @@ board = Arduino(PORT,debug=True)
 
 # Set the sampling rate in the Arduino
 board.samplingOn(1000 / samplingRate)
+channel = 1
 
 # Register the callback which adds the data to the animated plot
 # The function "callback" (see above) is called when data has
 # arrived on channel 0.
 print(len(board.analog))
-board.analog[3].register_callback(callBack)
+board.analog[channel].register_callback(callBack)
 
 # Enable the callback
-board.analog[3].enable_reporting()
+board.analog[channel].enable_reporting()
 
-t = Blink(board, 1/200)
+t = Blink(board, 1/50)
 t.start()
 
 # Show the window
