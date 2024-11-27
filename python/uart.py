@@ -54,9 +54,8 @@ class ShiftRegister:
 
     def get_data(self) -> chr:
         val = 0
-        print(self.buf)
         for i in range(len(self.buf)):
-            val += int(2**i * self.buf[i])
+            val += int(2**(7-i) * self.buf[i])
 
         return chr(val)
 
@@ -73,10 +72,9 @@ class UART_Rx(UART):
         UART.__init__(self, baud_rate)
 
         self.__clk_divisor = 8
-        self.__periods = 0
         self.__available_callback = available_callback
         self.__clk_period = 1 / (self.__clk_divisor * self._baud_rate)
-        print(self.__clk_period)
+        self.__dclk_period = 1 / (self._baud_rate)
         self.__low_for = 0
         self.__high_for = 0
         
@@ -86,6 +84,7 @@ class UART_Rx(UART):
         # Timers
         self.__clk = Timer(self.__clk_period, self.__clk_callback)
         self.__clk.start()
+        self.__dclk = Timer(self.__dclk_period, self.__dclk_callback)
 
         # Rx data line, accessible outside the receiver
         self.d = 1
@@ -97,14 +96,42 @@ class UART_Rx(UART):
             self.__low_for = 0      # we can consider it a spurious pulse
 
         self.__low_for += 1
-        if self.__low_for == self.__clk_divisor:
+        if self.__low_for == self.__clk_divisor - 1:
             self.__low_for = 0
+            self.__dclk.start()
             return True
         return False
 
     def __clk_restart(self):
         self.__clk = Timer(self.__clk_period, self.__clk_callback)
         self.__clk.start()
+
+    def __dclk_restart(self):
+        self.__dclk = Timer(self.__dclk_period, self.__dclk_callback)
+        self.__dclk.start()
+
+    def __dclk_callback(self):
+        if self.__receiving: self.__dclk_restart()
+    
+        global rx_clk
+
+        self._buf.d = 1 if self.__high_for > self.__low_for else 0
+        self._buf.clock()
+
+        print(f"{self.__high_for} {self.__low_for}")
+        rx_clk.pop()
+        rx_clk.append(1)
+
+        self.__high_for = 0
+        self.__low_for = 0
+
+        self._clocked_bits += 1 
+
+        if self._clocked_bits == len(self._buf):
+            self.__dclk.cancel()
+            self.__receiving = False
+            self.__available_callback()
+            self._clocked_bits = 0
 
     def __clk_callback(self):
         # Can assume that callback will take less time than the clock period
@@ -120,30 +147,11 @@ class UART_Rx(UART):
             return
 
         # If reaching this point, then must be receiving
-        self.__periods  += 1
         self.__low_for  += 1 if self.d == 0 else 0    
         self.__high_for += 1 if self.d == 1 else 0   
 
-        if self.__periods == self.__clk_divisor:
-            self._buf.d = 1 if self.__high_for > self.__low_for else 0
-            self._buf.clock()
-            self.__periods = 0 
-
-            print(f"{self.__high_for} {self.__low_for}")
-            rx_clk.pop()
-            rx_clk.append(1)
-
-            self.__high_for = 0
-            self.__low_for = 0
-
-            self._clocked_bits += 1 
-
-        if self._clocked_bits == len(self._buf):
-            self.__available_callback()
-            self._clocked_bits = 0
-            self.__receiving = False
-
     def get_buf(self):
+        print(f"rx: {self._buf}")
         return self._buf.get_data()
     
     def stop(self):
@@ -184,7 +192,6 @@ class UART_Tx(UART):
             if val // 2**(7-i) != 0: val -= 2 ** (7-i)
             self._buf.clock()
         self._buf.d = 0
-        # print(self._buf)
 
     def send_frame(self):
         self.q = 0
@@ -192,11 +199,11 @@ class UART_Tx(UART):
         self.__clk.start()
         print(f"tx: {self._buf}")
 
-rx = UART_Rx(9.6, (lambda : print(f":{rx.get_buf()}:")))
-tx = UART_Tx(4.8)
+rx = UART_Rx(9.6, (lambda : print(f":{ord(rx.get_buf())}:")))
+tx = UART_Tx(9.6)
 
 idx = 0
-data = "aa"
+data = "aaaaa"
 # data = "Hello World"
 time.sleep(0.5)
 while idx < len(data):
