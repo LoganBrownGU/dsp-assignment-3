@@ -1,5 +1,6 @@
 import numpy as np
 from threading import Timer
+from threading import Condition
 import time
 
 class RingBuffer:
@@ -159,6 +160,7 @@ class UART_Tx(UART):
         # Tx data line
         self.q = 1
         self.__q_callback = q_callback
+        self.__cv = None
 
         # Flags
         self.sending = False
@@ -185,6 +187,10 @@ class UART_Tx(UART):
             self.sending = False
             self.__clk = Timer(1 / self._baud_rate, self.__send_data)
             self._clocked_bits = 0
+            if self.__cv != None: 
+                self.__cv.acquire()
+                self.__cv.notify_all()
+                self.__cv.release()
 
     def load_data(self, data: chr):
         val = ord(data)
@@ -198,6 +204,20 @@ class UART_Tx(UART):
         self.__set_q(0)                                                 # Start bit
         self.sending = True
         self.__clk.start()
+
+    def send_bulk(self, data, callback):
+        self.__cv = Condition()
+        for d in data:
+            self.load_data(d)
+            self.send_frame()
+            while self.sending: 
+                self.__cv.acquire()
+                self.__cv.wait()
+                self.__cv.release()
+
+        self.__cv = None
+        callback()
+
 
 def graph_uart():
     baud = 100
@@ -233,10 +253,13 @@ def graph_uart():
     plt.ylim(-0.1, 2.1)
     plt.show()
 
-# baud = 10
-# def update_rx(q):
-#     rx.d = q
-# rx = UART_Rx(baud, (lambda : print(f"{rx.get_buf()}", end="")))
-# tx = UART_Tx(baud, update_rx)
-# data = "hello there\n"
-# while 
+baud = 100
+def finish():
+    print("finished")
+    rx.stop()
+def update_rx(q):
+    rx.d = q
+rx = UART_Rx(baud, (lambda : print(f"{rx.get_buf()}", end="")))
+tx = UART_Tx(baud, update_rx)
+data = "hell\n"
+tx.send_bulk(data, finish)
