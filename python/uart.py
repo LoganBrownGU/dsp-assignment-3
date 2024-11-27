@@ -1,7 +1,9 @@
 import numpy as np
 from threading import Timer
+import time
 
 rx_output = []
+rx_clk = []
 
 class RingBuffer:
     def __init__(self, size):
@@ -52,6 +54,7 @@ class ShiftRegister:
 
     def get_data(self) -> chr:
         val = 0
+        print(self.buf)
         for i in range(len(self.buf)):
             val += int(2**i * self.buf[i])
 
@@ -73,6 +76,7 @@ class UART_Rx(UART):
         self.__periods = 0
         self.__available_callback = available_callback
         self.__clk_period = 1 / (self.__clk_divisor * self._baud_rate)
+        print(self.__clk_period)
         self.__low_for = 0
         self.__high_for = 0
         
@@ -107,7 +111,9 @@ class UART_Rx(UART):
         # Restart timer immediately so that clock period doesn't include processing time
         self.__clk_restart()
         global rx_output
+        global rx_clk
         rx_output.append(self.d)
+        rx_clk.append(0)
 
         if not self.__receiving:
             self.__receiving = self.__check_start()
@@ -122,6 +128,14 @@ class UART_Rx(UART):
             self._buf.d = 1 if self.__high_for > self.__low_for else 0
             self._buf.clock()
             self.__periods = 0 
+
+            print(f"{self.__high_for} {self.__low_for}")
+            rx_clk.pop()
+            rx_clk.append(1)
+
+            self.__high_for = 0
+            self.__low_for = 0
+
             self._clocked_bits += 1 
 
         if self._clocked_bits == len(self._buf):
@@ -162,7 +176,6 @@ class UART_Tx(UART):
             self.sending = False
             self.__clk = Timer(1 / self._baud_rate, self.__send_data)
             self._clocked_bits = 0
-            # print("here")
 
     def load_data(self, data: chr):
         val = ord(data)
@@ -177,15 +190,18 @@ class UART_Tx(UART):
         self.q = 0
         self.sending = True
         self.__clk.start()
+        print(f"tx: {self._buf}")
 
-rx = UART_Rx(96, (lambda : print(ord(rx.get_buf()))))
-tx = UART_Tx(96)
+rx = UART_Rx(9.6, (lambda : print(f":{rx.get_buf()}:")))
+tx = UART_Tx(4.8)
 
 idx = 0
-data = "H"
+data = "aa"
 # data = "Hello World"
+time.sleep(0.5)
 while idx < len(data):
     rx.d = tx.q
+    # print(tx.q, end="")
     if not tx.sending:
         tx.load_data(data[idx])
         tx.send_frame()
@@ -197,6 +213,7 @@ rx.stop()
 
 import matplotlib.pyplot as plt
 plt.plot(rx_output)
+plt.plot(rx_clk)
 plt.ylim(-0.1, 1.1)
 plt.show()
 
