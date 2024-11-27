@@ -2,9 +2,6 @@ import numpy as np
 from threading import Timer
 import time
 
-rx_output = []
-rx_clk = []
-
 class RingBuffer:
     def __init__(self, size):
         self.buf = np.zeros(size)
@@ -89,6 +86,9 @@ class UART_Rx(UART):
         # Rx data line, accessible outside the receiver
         self.d = 1
 
+        # Clock for debugging
+        self.c = 0
+
     # Returns True if start bit detected
     # Should only be called ONCE per clock cycle
     def __check_start(self):
@@ -98,6 +98,7 @@ class UART_Rx(UART):
         self.__low_for += 1
         if self.__low_for == self.__clk_divisor - 1:
             self.__low_for = 0
+            self.c = 2
             self.__dclk.start()
             return True
         return False
@@ -113,14 +114,10 @@ class UART_Rx(UART):
     def __dclk_callback(self):
         if self.__receiving: self.__dclk_restart()
     
-        global rx_clk
-
         self._buf.d = 1 if self.__high_for > self.__low_for else 0
         self._buf.clock()
 
-        print(f"{self.__high_for} {self.__low_for}")
-        rx_clk.pop()
-        rx_clk.append(1)
+        self.c = 1
 
         self.__high_for = 0
         self.__low_for = 0
@@ -129,6 +126,7 @@ class UART_Rx(UART):
 
         if self._clocked_bits == len(self._buf):
             self.__dclk.cancel()
+            self.__dclk = Timer(self.__dclk_period, self.__dclk_callback)
             self.__receiving = False
             self.__available_callback()
             self._clocked_bits = 0
@@ -137,10 +135,6 @@ class UART_Rx(UART):
         # Can assume that callback will take less time than the clock period
         # Restart timer immediately so that clock period doesn't include processing time
         self.__clk_restart()
-        global rx_output
-        global rx_clk
-        rx_output.append(self.d)
-        rx_clk.append(0)
 
         if not self.__receiving:
             self.__receiving = self.__check_start()
@@ -176,10 +170,14 @@ class UART_Tx(UART):
         clocked_bits = self._clocked_bits
         self._clocked_bits += 1
 
-        if clocked_bits != len(self._buf):
+        if clocked_bits < len(self._buf):                               # Data bit
             self.__clk = Timer(1 / self._baud_rate, self.__send_data)
             self.__clk.start()
-        else:
+        elif clocked_bits <= len(self._buf) + 1:                        # Stop bits
+            self.q = 1
+            self.__clk = Timer(1 / self._baud_rate, self.__send_data)
+            self.__clk.start()
+        else:                                                           # Stop sending
             self.q = 1
             self.sending = False
             self.__clk = Timer(1 / self._baud_rate, self.__send_data)
@@ -194,13 +192,16 @@ class UART_Tx(UART):
         self._buf.d = 0
 
     def send_frame(self):
-        self.q = 0
+        self.q = 0                                                      # Start bit
         self.sending = True
         self.__clk.start()
         print(f"tx: {self._buf}")
 
-rx = UART_Rx(9.6, (lambda : print(f":{ord(rx.get_buf())}:")))
-tx = UART_Tx(9.6)
+baud = 100
+rx_output = []
+rx_clk = []
+rx = UART_Rx(baud, (lambda : print(f":{ord(rx.get_buf())}:")))
+tx = UART_Tx(baud)
 
 idx = 0
 data = "aaaaa"
@@ -208,11 +209,15 @@ data = "aaaaa"
 time.sleep(0.5)
 while idx < len(data):
     rx.d = tx.q
-    # print(tx.q, end="")
+    rx_output.append(rx.d)
+    rx_clk.append(rx.c)
+    rx.c = 0
     if not tx.sending:
         tx.load_data(data[idx])
         tx.send_frame()
         idx += 1
+
+    time.sleep(0.0001)
 
 while tx.sending: x = 0
 rx.stop()
@@ -221,7 +226,7 @@ rx.stop()
 import matplotlib.pyplot as plt
 plt.plot(rx_output)
 plt.plot(rx_clk)
-plt.ylim(-0.1, 1.1)
+plt.ylim(-0.1, 2.1)
 plt.show()
 
 # import time
