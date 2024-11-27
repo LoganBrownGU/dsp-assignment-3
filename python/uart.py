@@ -145,7 +145,6 @@ class UART_Rx(UART):
         self.__high_for += 1 if self.d == 1 else 0   
 
     def get_buf(self):
-        print(f"rx: {self._buf}")
         return self._buf.get_data()
     
     def stop(self):
@@ -195,91 +194,35 @@ class UART_Tx(UART):
         self.q = 0                                                      # Start bit
         self.sending = True
         self.__clk.start()
-        print(f"tx: {self._buf}")
 
-baud = 100
-rx_output = []
-rx_clk = []
-rx = UART_Rx(baud, (lambda : print(f":{ord(rx.get_buf())}:")))
-tx = UART_Tx(baud)
+def graph_uart():
+    baud = 1000
+    rx_output = []
+    rx_clk = []
+    rx = UART_Rx(baud, (lambda : print(f"{rx.get_buf()}", end="")))
+    tx = UART_Tx(baud)
 
-idx = 0
-data = "aaaaa"
-# data = "Hello World"
-time.sleep(0.5)
-while idx < len(data):
-    rx.d = tx.q
-    rx_output.append(rx.d)
-    rx_clk.append(rx.c)
-    rx.c = 0
-    if not tx.sending:
-        tx.load_data(data[idx])
-        tx.send_frame()
-        idx += 1
+    idx = 0
+    data = "Hello World\n"
+    time.sleep(0.5)
+    while idx < len(data) or tx.sending:
+        rx.d = tx.q
+        rx_output.append(rx.d)
+        rx_clk.append(rx.c)
+        rx.c = 0
+        if not tx.sending:
+            tx.load_data(data[idx])
+            tx.send_frame()
+            idx += 1
 
-    time.sleep(0.0001)
+        time.sleep(0.00001)
 
-while tx.sending: x = 0
-rx.stop()
-
-
-import matplotlib.pyplot as plt
-plt.plot(rx_output)
-plt.plot(rx_clk)
-plt.ylim(-0.1, 2.1)
-plt.show()
-
-# import time
-# data = []
-# clock = [0]
-# c = 0
-# def clk():
-#     global c
-#     c = 1 if c == 0 else 0
-#     Timer(1/96, clk).start()
-
-# def foo():
-#     global c
-#     data.append(tx.q)
-#     clock.append(c)
-#     c = 0
-#     if len(data) == 1000:
-#         return
-
-#     t = Timer(0.0001, foo)
-#     t.start()
-
-# t = Timer(0.0001, foo)
-# tx.load_data('a')
-# tx.send_frame()
-# t.start()
-# clk()
-
-# time.sleep(2)
-# plt.plot(data)
-# plt.plot(clock)
-# plt.show()
+    while tx.sending: x = 0
+    rx.stop()
 
 
-# data = []
-# buf = char_to_buf(33)
-# tstep = 0.1
-# tx = UART_Tx(1, tstep)
-# rx = UART_Rx(tx.clock_freq, tx.time_step)
-# for i in range(0, int(15 / tstep)):
-#     if (i == 10):
-#         tx.start(buf)
-
-#     clock.append(rx.clock())
-#     d = tx.send()
-#     data.append(d)
-#     d = rx.recv(d)
-
-# print(rx.buf)
-# print(buf)
-
-# import matplotlib.pyplot as plt
-# plt.plot(clock)
-# plt.plot(data)
-
-# plt.show()
+    import matplotlib.pyplot as plt
+    plt.plot(rx_output)
+    plt.plot(rx_clk)
+    plt.ylim(-0.1, 2.1)
+    plt.show()
