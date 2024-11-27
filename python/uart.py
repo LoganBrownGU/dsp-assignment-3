@@ -152,19 +152,23 @@ class UART_Rx(UART):
 
         
 class UART_Tx(UART):
-    def __init__(self, baud_rate):
+    def __init__(self, baud_rate, q_callback):
         UART.__init__(self, baud_rate)
         self.__clk = Timer(1 / baud_rate, self.__send_data)
         
         # Tx data line
         self.q = 1
+        self.__q_callback = q_callback
 
         # Flags
         self.sending = False
     
+    def __set_q(self, q):
+        self.q = q
+        self.__q_callback(q) 
     
     def __send_data(self):
-        self.q = self._buf.q
+        self.__set_q(self._buf.q)
         self._buf.clock()
         clocked_bits = self._clocked_bits
         self._clocked_bits += 1
@@ -173,11 +177,11 @@ class UART_Tx(UART):
             self.__clk = Timer(1 / self._baud_rate, self.__send_data)
             self.__clk.start()
         elif clocked_bits <= len(self._buf) + 1:                        # Stop bits
-            self.q = 1
+            self.__set_q(1)
             self.__clk = Timer(1 / self._baud_rate, self.__send_data)
             self.__clk.start()
         else:                                                           # Stop sending
-            self.q = 1
+            self.__set_q(1)
             self.sending = False
             self.__clk = Timer(1 / self._baud_rate, self.__send_data)
             self._clocked_bits = 0
@@ -191,22 +195,24 @@ class UART_Tx(UART):
         self._buf.d = 0
 
     def send_frame(self):
-        self.q = 0                                                      # Start bit
+        self.__set_q(0)                                                 # Start bit
         self.sending = True
         self.__clk.start()
 
 def graph_uart():
-    baud = 1000
+    baud = 100
     rx_output = []
     rx_clk = []
+    
+    def update_rx(q):
+        rx.d = q
     rx = UART_Rx(baud, (lambda : print(f"{rx.get_buf()}", end="")))
-    tx = UART_Tx(baud)
+    tx = UART_Tx(baud, update_rx)
 
     idx = 0
     data = "Hello World\n"
     time.sleep(0.5)
     while idx < len(data) or tx.sending:
-        rx.d = tx.q
         rx_output.append(rx.d)
         rx_clk.append(rx.c)
         rx.c = 0
@@ -226,3 +232,11 @@ def graph_uart():
     plt.plot(rx_clk)
     plt.ylim(-0.1, 2.1)
     plt.show()
+
+# baud = 10
+# def update_rx(q):
+#     rx.d = q
+# rx = UART_Rx(baud, (lambda : print(f"{rx.get_buf()}", end="")))
+# tx = UART_Tx(baud, update_rx)
+# data = "hello there\n"
+# while 
