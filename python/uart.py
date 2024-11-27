@@ -1,139 +1,91 @@
 import numpy as np
+from threading import Timer
+
+class RingBuffer:
+    def __init__(self, size):
+        self.buf = np.zeros(size)
+        self.start = 0
+
+    def append(self, x):
+        self.buf[self.start] = x
+        self.start += 1
+        if self.start == len(self.buf):
+            self.start = 0
+
+    def __getitem__(self, i) -> int:
+        index = self.start + i
+        if index >= len(self.buf):
+            index -= len(self.buf)
+
+        return self.buf[index]
+
+    def __str__(self) -> str:
+        output = "["
+        for i in range(len(self.buf)):
+            output += str(self.get(i)) + " "
+        return output[:-1] + "]"
+    
+    def __sizeof__(self) -> int:
+        return len(self.buf)
+
+
+class ShiftRegister:
+    def __init__(self, size):
+        self.buf = RingBuffer(size)
+        self.d = 0
+
+    def clock(self):
+        self.buf.append(self.d)
+
+    def clr(self):
+        self.buf = RingBuffer(len(self.buf))
+
 
 class UART:
-    def clock(self):
-        return 1 if self.t % (1 / self.clock_freq) < 0.5 else 0
-    
-    def clock_edge(self):
-        edge = self.prev_clk and (not self.clock())
-        self.prev_clk = self.clock()
-        return edge
-    
-    def __init__(self, clock_freq, time_step):
-        self.clock_freq = clock_freq
-        self.time_step = time_step
-        self.t = 0
-        self.char_start = False
-        self.char_stop = True
-        self.prev = 1
-        self.prev_clk = 0
-        self.buf_idx = 0
-        self.bits_per_char = 8
-        self.buf = np.zeros(self.bits_per_char)     
+    def __init__(self, baud_rate):
+        self._baud_rate = baud_rate
+        self._buf = ShiftRegister(8)
 
 
 class UART_Rx(UART):
-    
-    def check_start(self, signal, prev):
-        if not self.char_stop or self.char_start:
-            return False
+    def __init__(self, baud_rate, available_callback):
+        UART.__init__(self, baud_rate)
 
-        return prev == 1 and signal == 0
-
-    def check_stop(self, signal, prev):
-        if not self.char_start or self.char_stop:
-            return False
-
-        return prev == 1 and signal == 1 and self.buf_idx == (self.bits_per_char - 1)
-
-
-    # return None if byte not read, byte if read
-    def recv(self, signal):
-        self.t += self.time_step
-        if not self.clock_edge():
-            return None
-
-        prev = self.prev
-        self.prev = signal
-
-        if self.check_start(signal, prev):
-            self.char_start = True
-            return None
-        if not self.char_start:
-            return None
+        self.__clk_divisor = 8
+        self.__available_callback = available_callback
+        self.__last_level = 10
+        self.__clk_period = 1 / (self.__clk_divisor * self._baud_rate)
+        self.__low_for = 0
         
-        if self.check_stop(signal, prev):
-            self.char_stop = True
-            self.char_start = False
+        # Flags 
+        self.__receiving = False
 
-            return self.buf_idx 
+        # Timers
+        self.__clk = Timer(self.__clk_period, self.clk_callback)
+        self.__clk.start()
 
-        print(f"{self.t}: {signal} {self.buf_idx}")
-        if (self.buf_idx < self.bits_per_char):
-            self.buf[self.buf_idx] = signal
-        self.buf_idx += 1
+        # Rx data line, accessible outside the receiver
+        self.d = 0
 
-    def __init__(self, clock_freq, time_step):
-        UART.__init__(self, clock_freq, time_step)
+    # Returns True if start bit detected
+    def check_start(self):
+        if self.d == 1:             # If high, then we are not receiving this bit time, and 
+            self.__low_for = 0      # we can consider it a spurious pulse
 
+        self.__low_for += 1
+        if self.__low_for == self.__clk_divisor:
+            self.__low_for = 0
+            return True
+        return False
 
-class UART_Tx(UART):
-    # def clock(self):
-        # return 1 if (self.t + 0.25 * (1 / self.clock_freq)) % (1 / self.clock_freq) < 0.5 else 0
-    
-    def start(self, buf):
-        if not self.char_stop or self.char_start:
-            raise RuntimeError("Attempted to start send while sending")
+    def clk_callback(self):
+        if not self.__receiving:
+            pass
 
-        assert len(buf) == self.bits_per_char
-        self.buf = buf
-        self.buf_idx = 0
-        self.char_start = True
-        self.char_stop = False
-        self.stop_bits = 0
-        self.finished = False
-
-    def send(self):
-        self.t += self.time_step
-
-        if self.char_stop and self.clock_edge():
-            self.stop_bits += 1
-            if self.stop_bits == 2:
-                self.finished = True
-
-        if self.char_stop:
-            return 1 
-
-        if self.char_start and self.clock_edge():
-            self.char_start = False
-            return 0
-
-        if self.char_start:
-            return 0
-        
-        # If not start and not stop then must be sending a char
-        if (self.buf_idx == self.bits_per_char):
-            self.char_stop = True
-            return 1
-        
-        v = self.buf[self.buf_idx]
-        if self.clock_edge():
-            self.buf_idx += 1
-
-        return v
-        
+rx = UART_Rx(9600, print)
 
 
-    def __init__(self, clock_freq, time_step):
-        UART.__init__(self, clock_freq, time_step)
-        self.stop_bits = 0
-        self.finished = False
-        
 
-def char_to_buf(char):
-    buf = np.zeros(8)
-
-    for i in range(len(buf)):
-        pv = 2 ** (7-i)
-        buf[i] = int(char // pv != 1)
-        if char // pv == 1:
-            char -= pv
-
-    print(buf)
-    return buf
-
-
-clock = []
 # data = []
 # buf = char_to_buf(33)
 # tstep = 0.1
