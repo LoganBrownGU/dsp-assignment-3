@@ -25,7 +25,7 @@ class RingBuffer:
             output += str(self.get(i)) + " "
         return output[:-1] + "]"
     
-    def __sizeof__(self) -> int:
+    def __len__(self) -> int:
         return len(self.buf)
 
 
@@ -33,6 +33,9 @@ class ShiftRegister:
     def __init__(self, size):
         self.buf = RingBuffer(size)
         self.d = 0
+
+    def __len__(self) -> int:
+        return len(self.buf)
 
     def clock(self):
         self.buf.append(self.d)
@@ -52,23 +55,26 @@ class UART_Rx(UART):
         UART.__init__(self, baud_rate)
 
         self.__clk_divisor = 8
+        self.__periods = 0
+        self.__clocked_bits = 0
         self.__available_callback = available_callback
-        self.__last_level = 10
         self.__clk_period = 1 / (self.__clk_divisor * self._baud_rate)
         self.__low_for = 0
+        self.__high_for = 0
         
         # Flags 
         self.__receiving = False
 
         # Timers
-        self.__clk = Timer(self.__clk_period, self.clk_callback)
+        self.__clk = Timer(self.__clk_period, self.__clk_callback)
         self.__clk.start()
 
         # Rx data line, accessible outside the receiver
         self.d = 0
 
     # Returns True if start bit detected
-    def check_start(self):
+    # Should only be called ONCE per clock cycle
+    def __check_start(self):
         if self.d == 1:             # If high, then we are not receiving this bit time, and 
             self.__low_for = 0      # we can consider it a spurious pulse
 
@@ -78,11 +84,43 @@ class UART_Rx(UART):
             return True
         return False
 
-    def clk_callback(self):
-        if not self.__receiving:
-            pass
+    def __clk_restart(self):
+        self.__clk = Timer(self.__clk_period, self.__clk_callback)
+        self.__clk.start()
 
-rx = UART_Rx(9600, print)
+    def __clk_callback(self):
+        # Can assume that callback will take less time than the clock period
+        # Restart timer immediately so that clock period doesn't include processing time
+        self.__clk_restart()
+
+        if not self.__receiving:
+            self.__receiving = self.__check_start()
+            return
+
+        # If reaching this point, then must be receiving
+        self.__periods  += 1
+        self.__low_for  += 1 if self.d == 0 else 0    
+        self.__high_for += 1 if self.d == 1 else 0   
+
+        if self.__periods == self.__clk_divisor:
+            self._buf.d = 1 if self.__high_for > self.__low_for else 0
+            self._buf.clock()
+            self.__periods = 0 
+            self.__clocked_bits += 1 
+
+        if self.__clocked_bits == len(self._buf):
+            self.__available_callback()
+            self.__clocked_bits = 0
+            self.__receiving = False
+
+    def get_buf():
+        
+
+        
+
+# rx = UART_Rx(9600, (_ -> print()))
+# rx.d = 1
+# Timer(0.1, )
 
 
 
