@@ -50,12 +50,12 @@ class ShiftRegister:
     def clr(self):
         self.buf = RingBuffer(len(self.buf))
 
-    def get_data(self) -> chr:
+    def get_data(self) -> int:
         val = 0
         for i in range(len(self.buf)):
             val += int(2**(7-i) * self.buf[i])
 
-        return chr(val)
+        return val
 
 
 class UART:
@@ -192,8 +192,8 @@ class UART_Tx(UART):
                 self.__cv.notify_all()
                 self.__cv.release()
 
-    def load_data(self, data: chr):
-        val = ord(data)
+    def load_data(self, data: int):
+        val = data
         for i in range(len(self._buf)):
             self._buf.d = val // 2**(7-i)
             if val // 2**(7-i) != 0: val -= 2 ** (7-i)
@@ -259,9 +259,19 @@ def finish():
     rx.stop()
 def update_rx(q):
     rx.d = q
-rx = UART_Rx(baud, (lambda : print(f"{rx.get_buf()}", end="", flush=True)))
+def recv_byte():
+    global out_bytes
+    out_bytes.append(rx.get_buf())
+    print(f"{chr(out_bytes[-1])}", end="", flush=True)
+
+out_bytes = []
+rx = UART_Rx(baud, recv_byte)
+# rx = UART_Rx(baud, (lambda : print(f"{chr(rx.get_buf())}", end="", flush=True)))
 tx = UART_Tx(baud, update_rx)
-data = ""
-with open("../to_send.txt") as f:
-    data = f.readlines()[0] + "\n"
+data = []
+with open("../to_send.txt", "rb") as f:
+    data = f.read()
 tx.send_bulk(data, finish)
+
+with open("../received.txt", "wb") as f:
+    f.write(bytes(out_bytes))
