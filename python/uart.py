@@ -22,7 +22,7 @@ class RingBuffer:
     def __str__(self) -> str:
         output = "["
         for i in range(len(self.buf)):
-            output += str(self.get(i)) + " "
+            output += str(self[i]) + " "
         return output[:-1] + "]"
     
     def __len__(self) -> int:
@@ -33,12 +33,14 @@ class ShiftRegister:
     def __init__(self, size):
         self.buf = RingBuffer(size)
         self.d = 0
+        self.q = 0
 
     def __len__(self) -> int:
         return len(self.buf)
 
     def clock(self):
         self.buf.append(self.d)
+        self.q = self.buf[-1]
 
     def clr(self):
         self.buf = RingBuffer(len(self.buf))
@@ -55,6 +57,7 @@ class UART:
     def __init__(self, baud_rate):
         self._baud_rate = baud_rate
         self._buf = ShiftRegister(8)
+        self._clocked_bits = 0
 
 
 class UART_Rx(UART):
@@ -63,7 +66,6 @@ class UART_Rx(UART):
 
         self.__clk_divisor = 8
         self.__periods = 0
-        self.__clocked_bits = 0
         self.__available_callback = available_callback
         self.__clk_period = 1 / (self.__clk_divisor * self._baud_rate)
         self.__low_for = 0
@@ -115,7 +117,7 @@ class UART_Rx(UART):
             self.__periods = 0 
             self.__clocked_bits += 1 
 
-        if self.__clocked_bits == len(self._buf):
+        if self._clocked_bits == len(self._buf):
             self.__available_callback()
             self.__clocked_bits = 0
             self.__receiving = False
@@ -124,8 +126,63 @@ class UART_Rx(UART):
         return self._buf.get_data()
 
         
+class UART_Tx(UART):
+    def __init__(self, baud_rate):
+        UART.__init__(self, baud_rate)
+        self.__clk = Timer(1 / baud_rate, self.__send_data)
+        
+        # Tx data line
+        self.q = 1
+    
+    
+    def __send_data(self):
+        self.q = self._buf.q
+        print(self.q)
+        self._buf.clock()
+        clocked_bits = self._clocked_bits
+        self._clocked_bits += 1
 
-rx = UART_Rx(9600, (lambda : print(rx.get_buf())))
+        if clocked_bits != len(self._buf):
+            self.__clk = Timer(1 / self._baud_rate, self.__send_data)
+            self.__clk.start()
+        else:
+            self.q = 1
+
+    def load_data(self, data: chr):
+        val = ord(data)
+        for i in range(len(self._buf)):
+            self._buf.d = val // 2**(7-i)
+            print(self._buf.d)
+            if val // 2**(7-i) != 0: val -= 2 ** (7-i)
+            self._buf.clock()
+        print(self._buf.buf)
+
+    def send_frame(self):
+        self.q = 0
+        self.__clk.start()
+
+# rx = UART_Rx(9600, (lambda : print(rx.get_buf())))
+tx = UART_Tx(96)
+
+import matplotlib.pyplot as plt
+import time
+data = []
+def foo():
+    data.append(tx.q)
+    if len(data) == 500:
+        return
+
+    t = Timer(0.0001, foo)
+    t.start()
+
+t = Timer(0.0001, foo)
+tx.load_data('a')
+tx.send_frame()
+t.start()
+
+time.sleep(2)
+plt.plot(data)
+plt.show()
 
 
 # data = []
