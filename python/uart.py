@@ -259,7 +259,9 @@ def finish():
     rx.stop()
 def update_rx(q):
     rx.d = q
-rx = UART_Rx(baud, (lambda : print(f"{rx.get_buf()}", end="")))
+rx = UART_Rx(baud, (lambda : print(f"{rx.get_buf()}", end="", flush=True)))
 tx = UART_Tx(baud, update_rx)
-data = "hell\n"
+data = ""
+with open("../to_send.txt") as f:
+    data = f.readlines()[0] + "\n"
 tx.send_bulk(data, finish)
