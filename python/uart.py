@@ -43,6 +43,13 @@ class ShiftRegister:
     def clr(self):
         self.buf = RingBuffer(len(self.buf))
 
+    def get_data(self) -> chr:
+        val = 0
+        for i in range(len(self.buf)):
+            val += int(2**i * self.buf[i])
+
+        return chr(val)
+
 
 class UART:
     def __init__(self, baud_rate):
@@ -70,7 +77,7 @@ class UART_Rx(UART):
         self.__clk.start()
 
         # Rx data line, accessible outside the receiver
-        self.d = 0
+        self.d = 1
 
     # Returns True if start bit detected
     # Should only be called ONCE per clock cycle
@@ -113,15 +120,12 @@ class UART_Rx(UART):
             self.__clocked_bits = 0
             self.__receiving = False
 
-    def get_buf():
-        
+    def get_buf(self):
+        return self._buf.get_data()
 
         
 
-# rx = UART_Rx(9600, (_ -> print()))
-# rx.d = 1
-# Timer(0.1, )
-
+rx = UART_Rx(9600, (lambda : print(rx.get_buf())))
 
 
 # data = []
