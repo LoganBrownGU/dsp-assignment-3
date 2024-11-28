@@ -8,12 +8,14 @@ see LICENSE file.
 """
 
 import uart
+from firfilter import FIRFilter
 
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtWidgets
 
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.signal as signal
 
 from pyfirmata2 import Arduino
 from threading import Timer
@@ -100,11 +102,12 @@ l.addWidget(label)
 
 # called for every new sample at channel 0 which has arrived from the Arduino
 # "data" contains the new sample
+filter = FIRFilter(signal.firwin(numtaps=501, cutoff=5, fs=1000, pass_zero="highpass") * np.kaiser(501, 16.8))
 def callBack(data):
     # filter your channel 0 samples here:
     # data = self.filter_of_channel0.dofilter(data)
     # send the sample to the plotwindow
-    qtPanningPlot1.addData(data)
+    qtPanningPlot1.addData(filter.filter(data))
 
 # Get the Ardunio board.
 board = Arduino(PORT,debug=True)
@@ -122,7 +125,7 @@ board.analog[channel].register_callback(callBack)
 # Enable the callback
 board.analog[channel].enable_reporting()
 
-t = Blink(board, 1/20)
+t = Blink(board, 1/4)
 t.start()
 
 # Show the window
