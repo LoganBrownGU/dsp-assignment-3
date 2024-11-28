@@ -253,25 +253,26 @@ def graph_uart():
     plt.ylim(-0.1, 2.1)
     plt.show()
 
-baud = 100
-def finish():
-    print("finished")
-    rx.stop()
-def update_rx(q):
-    rx.d = q
-def recv_byte():
-    global out_bytes
-    out_bytes.append(rx.get_buf())
-    print(f"{chr(out_bytes[-1])}", end="", flush=True)
+def send_file():
+    baud = 100
+    def finish():
+        print("finished")
+        rx.stop()
+    def update_rx(q):
+        rx.d = q
+    def recv_byte():
+        global out_bytes
+        out_bytes.append(rx.get_buf())
+        print(f"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b{len(out_bytes)}", end="", flush=True)
 
-out_bytes = []
-rx = UART_Rx(baud, recv_byte)
-# rx = UART_Rx(baud, (lambda : print(f"{chr(rx.get_buf())}", end="", flush=True)))
-tx = UART_Tx(baud, update_rx)
-data = []
-with open("../to_send.txt", "rb") as f:
-    data = f.read()
-tx.send_bulk(data, finish)
+    out_bytes = []
+    rx = UART_Rx(baud, recv_byte)
+    # rx = UART_Rx(baud, (lambda : print(f"{chr(rx.get_buf())}", end="", flush=True)))
+    tx = UART_Tx(baud, update_rx)
+    data = []
+    with open("assets/to_send.png", "rb") as f:
+        data = f.read()
+    tx.send_bulk(data, finish)
 
-with open("../received.txt", "wb") as f:
-    f.write(bytes(out_bytes))
+    with open("assets/received.png", "wb") as f:
+        f.write(bytes(out_bytes))
