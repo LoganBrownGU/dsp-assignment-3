@@ -27,6 +27,7 @@ class Transmitter():
         self.uart = uart.UART_Tx(baud, self.update)
         self.board = board
         self.output_pin = self.board.get_pin("d:4:o")
+        self.output_pin.write(1)
 
     def update(self, q):
         self.output_pin.write(q)
@@ -58,13 +59,13 @@ class Receiver():
         # diff = max - min
         # print(f"{"\b" * 100}{0 if (data - min) < 0.25 * diff else 1} : {max}", end="")
         thresh = 0.07
-        print(f"{"\b" * 100}{0 if data > thresh else 1}", end="")
         self.uart.d = 0 if data > thresh else 1
+        print(f"{"\b" * 100}{self.uart.d}", end="")
 
 PORT = Arduino.AUTODETECT
 board = Arduino(PORT,debug=True)
 
-baud = 1
+baud = 10
 receiver = Receiver(baud, 1000, board, 1)
 transmitter = Transmitter(baud, board)
 # board.samplingOn(1)

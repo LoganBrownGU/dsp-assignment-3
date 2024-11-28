@@ -1,0 +1,59 @@
+\documentclass{article}
+
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{dirtytalk}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{smartref}
+\usepackage[a4paper,margin=2cm]{geometry}
+
+\title{DSP Assignment 3 \\ \textit{Wireless Data Transmission Using Lasers}}
+\author{Amana Ahmmad, Logan Brown \\ 2590941A, 2641407B}
+
+\begin{document}
+\maketitle
+
+\begin{multicols}{2}
+
+\section{Introduction}
+Data are usually transmitted wirelessly using sub-infrared frequencies: radio waves, microwaves, and so on. Transmission is usually performed using an omni-directional antenna - this is desirable as the transmitter need not know where the receiver is relative to itself.  
+
+However, there exist use cases where the transmitter may not want to send its data in all directions. If the receiver and transmitter are stationary and in known locations, but it is for some reason not practicable to lay cable between the two, a highly directional wireless system may be more ideal. 
+
+In this case, using a laser to send the data, rather than an antenna, is a possibility. This report explores the use of a laser diode to send data, in conjunction with a light-dependent resistor (LDR) to detect the signal.
+
+\section{Data framing}
+Since the receiver and transmitter are separated, there cannot be a clock line between the two, necessitating the use of an asynchronous scheme. 
+
+To frame the data, UART (universal asynchronous receiver-transmitter) was chosen, as it is commonly used, well documented, and well tested. Python code was written to emulate a UART transmitter (Tx) and receiver (Rx), with two classes that would output 0 or 1, or read 0 or 1 respectively.
+
+The \texttt{UART\_Tx} class allows the user to load an array of bytes, which are then \say{sent} automatically by the class. The \texttt{UART\_Rx} class constantly listens for changes at 8 times the baud rate, and outputs a byte as soon as it determines that it has received one.
+
+\section{Set up}
+The laser was aimed at an LDR which was set up in a voltage-divider configuration, as outlined in Figure \ref{}. An Arduino connected to a computer measured the voltage across the LDR.
+
+Whenever the output of Tx changed, the new state was reflected in the laser, to provide a binary amplitude-shift keying (ASK) scheme. There are, of course, more complex modulation schemes, offering increased data rates, that could have been used but for the sake of simplicity the scope did not go beyond ASK. 
+
+Thus, whenever the output of Tx was low (0), the laser was off, and when it was high (1), the laser was on.
+
+\section{Filtering}
+As LDRs react to all light, including ambient light, there was a large DC component in the voltage signal. Naturally, there was also a 50 Hz mains hum present most likely due to the visually imperceptible dimming of the ceiling lights during the mains cycle.
+
+To remove these unwanted frequencies, a high pass and a bandstop IIR filter were chained together. The cutoff of the high pass was 5 Hz, and the cutoffs of the bandstop were 45 and 55 Hz.
+
+\section{Baud rate}
+Finally, the baud rate of the UARTs was set to \{BAUD\}. A blah blah justification
+
+\end{multicols}
+
+\section{Appendix}
+
+\subsection{uart.py}
+\lstinputlisting[language=python]{../python/uart.py}
+
+
+
+\end{document}

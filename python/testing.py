@@ -125,7 +125,7 @@ board.analog[channel].register_callback(callBack)
 # Enable the callback
 board.analog[channel].enable_reporting()
 
-t = Blink(board, 1/4)
+t = Blink(board, 1/10)
 t.start()
 
 # Show the window
