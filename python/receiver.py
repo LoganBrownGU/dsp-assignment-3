@@ -22,6 +22,11 @@ def fir_coeff_hp(fs, fc):
     # coeff[int(n_taps / 2)] = coeff[int(n_taps / 2) - 1]
     return signal.firwin(numtaps=n_taps, cutoff=fc, fs=fs, pass_zero="highpass") * np.kaiser(n_taps, 16.8)
 
+def fir_coeff_bp(fs, f1, f2):
+    n_taps = int(500)                # want to be able to sample down to 0.5 Hz, then double to account for transition window
+    n_taps += 1 if n_taps % 2 == 0 else 0  # ensure no. taps is odd for symmetry
+    return signal.firwin(numtaps=n_taps, cutoff=[f1,f2], fs=fs, pass_zero="bandpass") * np.kaiser(n_taps, 16.8)
+
 class Transmitter():
     def __init__(self, baud, board):
         self.uart = uart.UART_Tx(baud, self.update)
@@ -45,7 +50,8 @@ class Receiver():
         self.board.analog[analogue_channel].register_callback(self.update)
         self.board.analog[analogue_channel].enable_reporting()
         self.buf = uart.RingBuffer(int(sampling_rate * 0.5))
-        self.filter = FIRFilter(fir_coeff_hp(sampling_rate, 5))
+        self.filter1 = FIRFilter(fir_coeff_bp(sampling_rate, 15, 25))
+        self.filter2 = FIRFilter(fir_coeff_bp(sampling_rate, 25, 35))
 
     def update(self, data):
         data = self.filter.filter(data)
