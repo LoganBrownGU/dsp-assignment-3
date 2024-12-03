@@ -62,6 +62,7 @@ out_bytes = []
 
 def foo():
     out_bytes.append(receiver.uart.get_buf())
+    print(chr(out_bytes[-1]), end="", flush=True)
 
 class Receiver():
     def __init__(self, baud, sampling_rate, board, analogue_channel, f1, f2):
@@ -89,22 +90,25 @@ class Receiver():
         a2s.append(a2)
 
         # print(f"{"\b" * 100}{a1}\t{a2}", end="", flush=True)
-        thresh = 0.005
+        thresh = 0.03
         self.uart.d = 0 if a2 < thresh else 1
         # print(f"{"\b" * 100}{self.uart.d}", end="")
 
 PORT = Arduino.AUTODETECT
 board = Arduino(PORT,debug=True)
 
-baud = 5
-f1 = 10
-f2 = 20
-receiver = Receiver(baud, 500, board, 1, f1, f2)
+baud = 10
+f1 = 20
+f2 = 40
 transmitter = Transmitter(baud, board, f1, f2)
+time.sleep(1)
+receiver = Receiver(baud, 500, board, 1, f1, f2)
 # board.samplingOn(1)
 # board.analog[1].register_callback(lambda x : print(x))
 time.sleep(1)
-string = "hello\n"
+string = "" 
+with open("assets/to_send.txt") as f: 
+    string = f.read()
 print("".join([f"{x:08b}" for x in map(ord, string)]))
 transmitter.start(map(ord, string))
 
