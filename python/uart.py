@@ -167,7 +167,9 @@ class UART_Tx(UART):
     
     def __set_q(self, q):
         self.q = q
-        self.__q_callback(q) 
+
+        if self.__q_callback != None:
+            self.__q_callback(q) 
     
     def __send_data(self):
         self.__set_q(self._buf.q)
