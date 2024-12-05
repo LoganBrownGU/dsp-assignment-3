@@ -9,6 +9,7 @@ see LICENSE file.
 
 import uart
 from firfilter import FIRFilter
+from filter import Filter
 
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtWidgets
@@ -23,6 +24,11 @@ from threading import Timer
 PORT = Arduino.AUTODETECT
 # sampling rate: 1kHz
 samplingRate = 1000
+
+def fir_coeff_bp(fs, f1, f2):
+    n_taps = int(500)                # want to be able to sample down to 0.5 Hz, then double to account for transition window
+    n_taps += 1 if n_taps % 2 == 0 else 0  # ensure no. taps is odd for symmetry
+    return signal.firwin(numtaps=n_taps, cutoff=[f1,f2], fs=fs, pass_zero="bandpass") * np.kaiser(n_taps, 16.8)
 
 class QtPanningPlot:
 
@@ -102,12 +108,14 @@ l.addWidget(label)
 
 # called for every new sample at channel 0 which has arrived from the Arduino
 # "data" contains the new sample
-filter = FIRFilter(signal.firwin(numtaps=501, cutoff=5, fs=1000, pass_zero="highpass") * np.kaiser(501, 16.8))
+# filter = Filter(samplingRate, 49, 51)
+filter = FIRFilter(fir_coeff_bp(samplingRate, 25, 35))
 def callBack(data):
     # filter your channel 0 samples here:
     # data = self.filter_of_channel0.dofilter(data)
     # send the sample to the plotwindow
     qtPanningPlot1.addData(filter.filter(data))
+    # qtPanningPlot1.addData(data)
 
 # Get the Ardunio board.
 board = Arduino(PORT,debug=True)
@@ -125,7 +133,7 @@ board.analog[channel].register_callback(callBack)
 # Enable the callback
 board.analog[channel].enable_reporting()
 
-t = Blink(board, 1/10)
+t = Blink(board, 1/60)
 t.start()
 
 # Show the window

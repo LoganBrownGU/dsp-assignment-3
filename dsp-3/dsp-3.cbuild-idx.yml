@@ -1,0 +1,20 @@
+build-idx:
+  generated-by: csolution version 2.6.0
+  cdefault: ${CMSIS_COMPILER_ROOT}/cdefault.yml
+  csolution: dsp-3.csolution.yml
+  tmpdir: tmp
+  cprojects:
+    - cproject: dsp-3/dsp-3.cproject.yml
+  cbuilds:
+    - cbuild: dsp-3/dsp-3.Debug+STM32L432KCUx.cbuild.yml
+      project: dsp-3
+      configuration: .Debug+STM32L432KCUx
+      errors: true
+      messages:
+        errors:
+          - no component was found with identifier 'Device:Startup'
+          - processing context 'dsp-3.Debug+STM32L432KCUx' failed
+        info:
+          - dsp-3.cbuild-set.yml - file is already up-to-date
+          - dsp-3.cbuild-pack.yml - file is already up-to-date
+          - dsp-3.Debug+STM32L432KCUx.cbuild.yml - file is already up-to-date
