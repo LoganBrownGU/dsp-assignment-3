@@ -75,48 +75,80 @@ class FilterTest(unittest.TestCase):
     def gen_test_signal(self, fs):
         return np.abs(np.fft.ifft(np.ones(fs)))
 
-    @unittest.skip("")
-    def test_passband_attenuation(self, f_pass):
+    tolerance_places = 2
+
+    # TEST PASSBAND PERFORMANCE
+    def passband_attenuation(self, f_pass):
         fs = 1000
         signal = self.gen_test_signal(fs)
 
         filter = Filter(fs, f_pass)
         out_signal = [filter.filter(x) for x in signal]
-        self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[f_pass], np.abs(np.fft.fft(signal[f_pass])))
+        self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[f_pass], np.abs(np.fft.fft(signal))[f_pass], places=self.tolerance_places)
 
     def test_passband_attenuation_1Hz(self):
-        self.test_passband_attenuation(1)
+        self.passband_attenuation(1)
 
     def test_passband_attenuation_10Hz(self):
-        self.test_passband_attenuation(10)
+        self.passband_attenuation(10)
     
     def test_passband_attenuation_100Hz(self):
-        self.test_passband_attenuation(100)
+        self.passband_attenuation(100)
 
     def test_passband_attenuation_200Hz(self):
-        self.test_passband_attenuation(200)
+        self.passband_attenuation(200)
 
+
+    # TEST INDIVIDUAL IIR PASSBAND PERFORMANCE
     @unittest.skip("")
-    def test_stopband_attenation(self, f_pass):
+    def iir_passband_attenuation(self, f_pass):
         fs = 1000
         signal = self.gen_test_signal(fs)
 
         filter = Filter(fs, f_pass)
         out_signal = [filter.filter(x) for x in signal]
-        self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[f_pass + 5], 0)
-        self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[f_pass - 5], 0)
+        filter = IIRFilter(fs, f_pass)
+        out_signal = [filter.filter(x) for x in signal]
+        self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[f_pass], np.abs(np.fft.fft(signal))[f_pass], places=self.tolerance_places)
+
+    def test_iir_passband_attenuation_1Hz(self):
+        self.iir_passband_attenuation(1)
+
+    def test_iir_passband_attenuation_10Hz(self):
+        self.iir_passband_attenuation(10)
+    
+    def test_iir_passband_attenuation_100Hz(self):
+        self.iir_passband_attenuation(100)
+
+    def test_iir_passband_attenuation_200Hz(self):
+        self.iir_passband_attenuation(200)
+
+
+    # TEST STOPBAND PERFORMANCE
+    @unittest.skip("")
+    def stopband_attenation(self, f_pass):
+        fs = 1000
+        signal = self.gen_test_signal(fs)
+
+        filter = Filter(fs, f_pass)
+        out_signal = [filter.filter(x) for x in signal]
+
+        for i in range(f_pass + 5, fs // 2):
+            self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[i], 0, places=self.tolerance_places)
+        for i in range(0, f_pass - 5):
+            self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[i], 0, places=self.tolerance_places)
 
     def test_stopband_attenuation_1Hz(self):
-        self.test_stopband_attenation(1)
+        self.stopband_attenation(1)
 
     def test_stopband_attenuation_10Hz(self):
-        self.test_stopband_attenation(10)
+        self.stopband_attenation(10)
     
     def test_stopband_attenuation_100Hz(self):
-        self.test_stopband_attenation(100)
+        self.stopband_attenation(100)
 
     def test_stopband_attenuation_200Hz(self):
-        self.test_passband_attenuation(200)
+        self.passband_attenuation(200)
 
 
 if __name__ == "__main__":
