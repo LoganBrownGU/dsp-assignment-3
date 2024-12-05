@@ -96,6 +96,28 @@ class FilterTest(unittest.TestCase):
     def test_passband_attenuation_200Hz(self):
         self.test_passband_attenuation(200)
 
+    @unittest.skip("")
+    def test_stopband_attenation(self, f_pass):
+        fs = 1000
+        signal = self.gen_test_signal(fs)
+
+        filter = Filter(fs, f_pass)
+        out_signal = [filter.filter(x) for x in signal]
+        self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[f_pass + 5], 0)
+        self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[f_pass - 5], 0)
+
+    def test_stopband_attenuation_1Hz(self):
+        self.test_stopband_attenation(1)
+
+    def test_stopband_attenuation_10Hz(self):
+        self.test_stopband_attenation(10)
+    
+    def test_stopband_attenuation_100Hz(self):
+        self.test_stopband_attenation(100)
+
+    def test_stopband_attenuation_200Hz(self):
+        self.test_passband_attenuation(200)
+
 
 if __name__ == "__main__":
     unittest.main()
