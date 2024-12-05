@@ -8,7 +8,7 @@ from threading import Timer
 
 class Transmitter():
     def __init__(self, baud, board, f1, f2):
-        self.uart = uart.UART_Tx(baud, None)
+        self.uart = uart.UART_Tx(baud, lambda q: print(int(q), end="", flush=True))
         self.board = board
         self.output_pin = self.board.get_pin("d:4:o")
         self.output_pin.write(1)
@@ -31,8 +31,7 @@ class Transmitter():
         self.uart.send_bulk(data, self.end)
 
     def end(self):
-        time.sleep(1)
-        print("done")
+        print("\ndone")
         self.lo_timer.cancel()
         self.board.exit()
 
@@ -40,8 +39,5 @@ PORT = Arduino.AUTODETECT
 board = Arduino(PORT,debug=True)
 
 transmitter = Transmitter(10, board, 20, 40) 
-string = "" 
-with open("assets/to_send.txt") as f: 
-    string = f.read()
-print("".join([f"{x:08b}" for x in map(ord, string)]))
+string = input("Enter message: ") + "\n"
 transmitter.start(map(ord, string))
