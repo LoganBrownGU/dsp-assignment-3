@@ -1,0 +1,97 @@
+build:
+  generated-by: csolution version 2.6.0
+  solution: ../dsp-3.csolution.yml
+  project: dsp-3.cproject.yml
+  context: dsp-3.Debug+STM32L432KCUx
+  compiler: GCC
+  device: STMicroelectronics::STM32L432KCUx
+  device-pack: Keil::STM32L4xx_DFP@3.0.0
+  processor:
+    dsp: on
+    endian: little
+    fpu: sp
+    core: Cortex-M4
+  packs:
+    - pack: ARM::CMSIS@6.1.0
+      path: ${CMSIS_PACK_ROOT}/ARM/CMSIS/6.1.0
+    - pack: Keil::STM32L4xx_DFP@3.0.0
+      path: ${CMSIS_PACK_ROOT}/Keil/STM32L4xx_DFP/3.0.0
+  optimize: none
+  debug: on
+  misc:
+    C:
+      - -std=gnu11
+      - -masm-syntax-unified
+      - -fomit-frame-pointer
+      - -ffunction-sections
+      - -fdata-sections
+    CPP:
+      - -masm-syntax-unified
+      - -fomit-frame-pointer
+      - -ffunction-sections
+      - -fdata-sections
+    Link:
+      - --specs=nano.specs
+      - --specs=nosys.specs
+      - -Wl,-Map=../out/dsp-3/STM32L432KCUx/Debug/dsp-3.elf.map
+      - -Wl,--gc-sections
+      - -Wl,--no-warn-rwx-segments
+  define:
+    - STM32L432xx
+    - _RTE_
+  define-asm:
+    - STM32L432xx
+    - _RTE_
+  add-path:
+    - RTE/_Debug_STM32L432KCUx
+    - ${CMSIS_PACK_ROOT}/ARM/CMSIS/6.1.0/CMSIS/Core/Include
+  add-path-asm:
+    - RTE/_Debug_STM32L432KCUx
+    - ${CMSIS_PACK_ROOT}/ARM/CMSIS/6.1.0/CMSIS/Core/Include
+  output-dirs:
+    intdir: ../tmp
+    outdir: ../out/dsp-3/STM32L432KCUx/Debug
+    rtedir: RTE
+  output:
+    - type: elf
+      file: dsp-3.elf
+  components:
+    - component: ARM::CMSIS:CORE@6.1.0
+      condition: ARMv6_7_8-M Device
+      from-pack: ARM::CMSIS@6.1.0
+      selected-by: ARM::CMSIS:CORE
+      files:
+        - file: ${CMSIS_PACK_ROOT}/ARM/CMSIS/6.1.0/CMSIS/Core/Include
+          category: include
+          version: 6.1.0
+        - file: ${CMSIS_PACK_ROOT}/ARM/CMSIS/6.1.0/CMSIS/Core/Include/tz_context.h
+          category: header
+          version: 6.1.0
+        - file: ${CMSIS_PACK_ROOT}/ARM/CMSIS/6.1.0/CMSIS/Core/Template/ARMv8-M/main_s.c
+          category: sourceC
+          attr: template
+          version: 1.1.1
+          select: Secure mode 'main' module for ARMv8-M
+        - file: ${CMSIS_PACK_ROOT}/ARM/CMSIS/6.1.0/CMSIS/Core/Template/ARMv8-M/tz_context.c
+          category: sourceC
+          attr: template
+          version: 1.1.1
+          select: RTOS Context Management (TrustZone for ARMv8-M)
+        - file: ${CMSIS_PACK_ROOT}/ARM/CMSIS/6.1.0/CMSIS/Documentation/html/Core/index.html
+          category: doc
+          version: 6.1.0
+  linker:
+    script: RTE/Device/STM32L432KCUx/gcc_linker_script.ld.src
+    regions: RTE/Device/STM32L432KCUx/regions_STM32L432KCUx.h
+  groups:
+    - group: Source Files
+      files:
+        - file: main.c
+          category: sourceC
+  licenses:
+    - license: Apache-2.0
+      packs:
+        - pack: ARM::CMSIS@6.1.0
+        - pack: Keil::STM32L4xx_DFP@3.0.0
+      components:
+        - component: ARM::CMSIS:CORE@6.1.0

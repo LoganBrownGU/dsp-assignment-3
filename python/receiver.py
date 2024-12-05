@@ -1,5 +1,6 @@
 import uart
 from firfilter import FIRFilter 
+from filter import Filter
 import time
 import numpy as np
 import scipy.signal as signal
@@ -74,20 +75,21 @@ class Receiver():
         self.board.analog[analogue_channel].enable_reporting()
         self.buf1 = uart.RingBuffer(int(sampling_rate/f1))
         self.buf2 = uart.RingBuffer(int(sampling_rate/f2))
-        self.filter1 = FIRFilter(fir_coeff_bp(sampling_rate, f1 - 5, f1 + 5))
-        self.filter2 = FIRFilter(fir_coeff_bp(sampling_rate, f2 - 5, f2 + 5))
+        self.filter1 = Filter(sampling_rate, f1)
+        self.filter2 = Filter(sampling_rate, f2)
 
     def update(self, data):
 
-        self.buf1.append(abs(self.filter1.filter(data)))
-        self.buf2.append(abs(self.filter2.filter(data)))
-        
-        # a1 = self.filter1.filter(data)
-        # a2 = self.filter2.filter(data)
+        a1 = self.filter1.filter(data)
+        a2 = self.filter2.filter(data)
+        self.buf1.append(abs(a1))
+        self.buf2.append(abs(a2))
+
         a1 = np.max(self.buf1)
         a2 = np.max(self.buf2)
         a1s.append(a1)
         a2s.append(a2)
+
 
         # print(f"{"\b" * 100}{a1}\t{a2}", end="", flush=True)
         thresh = 0.03
