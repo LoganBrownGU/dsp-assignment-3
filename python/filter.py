@@ -3,27 +3,20 @@ from scipy.signal import butter
 from scipy.signal import freqz
 import scipy.signal as signal
 import matplotlib.pyplot as plt
+import unittest
 
 def bandpass( fs, f1 , f2):
-   nyquist = fs / 2
-   f1 = f1 / nyquist
-   f2 = f2 / nyquist
+    nyquist = fs / 2
+    f1 = f1 / nyquist
+    f2 = f2 / nyquist
+    
+    b, a = butter(1, [f1, f2], btype = 'bandpass')
  
-   b, a = butter( 1, [f1, f2], btype = 'bandpass' )
- 
-   return b, a
-
-def highpass(fs, fc):
-   nyquist = fs / 2
-   fc /= nyquist
- 
-   b, a = butter( 2, fc, btype = 'highpass' )
- 
-   return b, a
+    return b, a
 
 class IIRFilter():
     def __init__(self, fs, fc1 ):
-       self.b, self.a = bandpass(fs, fc1 - 2, fc1 + 2)
+       self.b, self.a = bandpass(fs, fc1-5, fc1+5)
        
        # normalise the coefficients
        self.b = [ b_i / self.a[0] for b_i in self.b ]
@@ -49,7 +42,7 @@ class IIRFilter():
 
 class Filter():
     def __init__(self, fs, fc1):
-        self.__iirs = [IIRFilter(fs, fc1) for i in range(3)]
+        self.__iirs = [IIRFilter(fs, fc1) for i in range(4)]
 
     def filter(self, sample):
         for iir in self.__iirs:
@@ -60,9 +53,7 @@ class Filter():
 def test_filter():
     # test signal
     fs = 1000
-    t = np.linspace(0, 1, fs)
-    data = np.sin(5 * 2 * np.pi * t) + np.sin(50 * 2 * np.pi * t) + np.sin(70 * 2 * np.pi * t)
-    out_data = []
+    data = np.abs(np.fft.ifft(np.ones(fs)))
 
     # apply the filter
     out_data = []
@@ -79,4 +70,31 @@ def test_filter():
     plt.grid()
     plt.show()
 
-# test_filter()
+class FilterTest(unittest.TestCase):
+
+    def gen_test_signal(self, fs):
+        return np.abs(np.fft.ifft(np.ones(fs)))
+
+    def test_passband_attenuation(self, f_pass):
+        fs = 1000
+        signal = self.gen_test_signal(fs)
+
+        filter = Filter(fs, f_pass)
+        out_signal = [filter.filter(x) for x in signal]
+        self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[f_pass], np.abs(np.fft.fft(signal[f_pass])))
+
+    def test_passband_attenuation_1Hz(self):
+        self.test_passband_attenuation(1)
+
+    def test_passband_attenuation_10Hz(self):
+        self.test_passband_attenuation(10)
+    
+    def test_passband_attenuation_100Hz(self):
+        self.test_passband_attenuation(100)
+
+    def test_passband_attenuation_200Hz(self):
+        self.test_passband_attenuation(200)
+
+
+if __name__ == "__main__":
+    unittest.main()
