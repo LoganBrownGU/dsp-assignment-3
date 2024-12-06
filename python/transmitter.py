@@ -20,31 +20,33 @@ class Transmitter():
     def __init__(self, baud, board, f1, f2):
         assert f1 < f2
 
-        self.uart = uart.UART_Tx(baud, lambda q: print(int(q), end="", flush=True))
-        self.board = board
-        self.output_pin = self.board.get_pin("d:4:o")
-        self.output_pin.write(1)
+        self.__uart = uart.UART_Tx(baud, lambda q: print(int(q), end="", flush=True))
+        self.__board = board
+        self.__output_pin = self.__board.get_pin("d:4:o")
+        self.__output_pin.write(1)
 
         self.__lo1 = self.LocalOscillator(f1)
         self.__lo2 = self.LocalOscillator(f2)
 
-        self.f1 = f1
-        self.f2 = f2
+        self.__f1 = f1
+        self.__f2 = f2
 
+        self.__lo_timer = None
         self.update()
 
     def update(self):
-        Timer(0.5 / (self.f2), self.update).start()
+        self.__lo_timer = Timer(0.5 / (self.__f2), self.update)
+        self.__lo_timer.start()
 
-        self.output_pin.write(self.__lo2.state() if self.uart.q else self.__lo1.state())
+        self.__output_pin.write(self.__lo2.state() if self.__uart.q else self.__lo1.state())
 
     def start(self, data):
-        self.uart.send_bulk(data, self.end)
+        self.__uart.send_bulk(data, self.end)
 
     def end(self):
         print("\ndone")
-        self.lo_timer.cancel()
-        self.board.exit()
+        self.__lo_timer.cancel()
+        self.__board.exit()
 
 PORT = Arduino.AUTODETECT
 board = Arduino(PORT,debug=True)

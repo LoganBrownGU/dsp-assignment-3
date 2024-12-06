@@ -47,36 +47,33 @@ class MainWindow(QtWidgets.QMainWindow):
 
 class Receiver():
     def __init__(self, baud, sampling_rate, board, analogue_channel, f1, f2):
-        self.uart = uart.UART_Rx(baud, self.end)
-        self.board = board
-        self.board.samplingOn(1000 / sampling_rate)
-        self.board.analog[analogue_channel].register_callback(self.update)
-        self.board.analog[analogue_channel].enable_reporting()
-        self.buf1 = uart.RingBuffer(int(sampling_rate/f1))
-        self.buf2 = uart.RingBuffer(int(sampling_rate/f2))
-        self.filter1 = Filter(sampling_rate, f1)
-        self.filter2 = Filter(sampling_rate, f2)
+        self.__uart = uart.UART_Rx(baud, self.end)
+        self.__board = board
+        self.__board.samplingOn(1000 / sampling_rate)
+        self.__board.analog[analogue_channel].register_callback(self.update)
+        self.__board.analog[analogue_channel].enable_reporting()
+        self.__buf1 = uart.RingBuffer(int(sampling_rate/f1))
+        self.__buf2 = uart.RingBuffer(int(sampling_rate/f2))
+        self.__filter1 = Filter(sampling_rate, f1)
+        self.__filter2 = Filter(sampling_rate, f2)
 
     def update(self, data):
+        a1 = self.__filter1.filter(data)
+        a2 = self.__filter2.filter(data)
+        self.__buf1.append(abs(a1))
+        self.__buf2.append(abs(a2))
 
-        a1 = self.filter1.filter(data)
-        a2 = self.filter2.filter(data)
-        self.buf1.append(abs(a1))
-        self.buf2.append(abs(a2))
-
-        a1 = np.max(self.buf1)
-        a2 = np.max(self.buf2)
+        a1 = np.max(self.__buf1)
+        a2 = np.max(self.__buf2)
 
         samples[0].append(a1)
         samples[1].append(a2)
 
         thresh = 0.02
-        self.uart.d = 0 if a2 < thresh else 1
-
-        # print(f"{"\b" * 100}: {a1}", end="")
+        self.__uart.d = 0 if a2 < thresh else 1
 
     def end(self):
-        print(chr(receiver.uart.get_buf()), end="", flush=True)
+        print(chr(receiver.__uart.get_buf()), end="", flush=True)
 
 PORT = Arduino.AUTODETECT
 board = Arduino(PORT,debug=True)
