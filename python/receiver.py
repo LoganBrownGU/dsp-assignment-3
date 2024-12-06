@@ -28,6 +28,8 @@ class Receiver():
         self.__filter1 = Filter(sampling_rate, f1)
         self.__filter2 = Filter(sampling_rate, f2)
 
+        self.__graph = Graph("Filtered and averaged", 2, 2000)
+
     def update(self, data):
         a1 = self.__filter1.filter(data)
         a2 = self.__filter2.filter(data)
@@ -37,24 +39,26 @@ class Receiver():
         a1 = np.max(self.__buf1)
         a2 = np.max(self.__buf2)
 
-        samples[0].append(a1)
-        samples[1].append(a2)
+        self.__graph.add_sample(a1, 0)
+        self.__graph.add_sample(a2, 1)
 
         thresh = 0.02
         self.__uart.d = 0 if a2 < thresh else 1
 
+        print("here")
+
     def end(self):
         print(chr(self.__uart.get_buf()), end="", flush=True)
 
-# PORT = Arduino.AUTODETECT
-# board = Arduino(PORT,debug=True)
-
-# baud = 10
-# f1 = 20
-# f2 = 40
-# receiver = Receiver(baud, 500, board, 1, f1, f2)
-# time.sleep(1)
-
 app = QtWidgets.QApplication([])
-w = Graph()
+
+PORT = Arduino.AUTODETECT
+board = Arduino(PORT,debug=True)
+
+baud = 10
+f1 = 20
+f2 = 40
+receiver = Receiver(baud, 500, board, 1, f1, f2)
+time.sleep(1)
+
 app.exec()
