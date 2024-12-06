@@ -12,7 +12,7 @@ class Graph(QMainWindow):
     def __init__(self, title, n_plots, back_samples, ylim=[0,1]):
         super(Graph, self).__init__()
 
-        self.back_samples = back_samples
+        self.back_samples = int(back_samples)
         self.setWindowTitle(title)
 
         self.time_plot = pg.PlotWidget()

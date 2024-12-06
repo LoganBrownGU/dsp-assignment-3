@@ -43,8 +43,8 @@ class Receiver():
         self.__buf = uart.RingBuffer(int(2 * sampling_rate/f))
         self.__filter = Filter(sampling_rate, f)
 
-        self.__filtered_graph = Graph("Filtered and averaged", 1, 2000, ylim=[0, 0.2])
-        self.__raw_graph = Graph("Raw data", 1, 500)
+        self.__filtered_graph = Graph("Filtered and averaged", 1, 2 * sampling_rate, ylim=[0, 0.2])
+        self.__raw_graph = Graph("Raw data", 1, sampling_rate / 2)
 
         Timer(0.01, self.__update).start()
 

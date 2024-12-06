@@ -19,8 +19,7 @@ class Transmitter():
 
 
     def __init__(self, baud, board, f):
-
-        self.__uart = uart.UART_Tx(baud, lambda q: print(int(q), end="", flush=True))
+        self.__uart = uart.UART_Tx(baud, None)
         self.__board = board
         self.__output_pin = self.__board.get_pin("d:4:o")
         self.__output_pin.write(1)
@@ -38,17 +37,29 @@ class Transmitter():
         self.__output_pin.write(self.__lo.state() if self.__uart.q else 0)
 
     def start(self, data):
-        self.__uart.send_bulk(data, self.end)
+        print("Sending...")
+        self.__uart.send_bulk(data, self.end_sending)
 
-    def end(self):
-        print("\ndone")
+
+    def end_sending(self):
+        print("Done")
+    
+    def __teardown(self):
         self.__lo_timer.cancel()
         self.__board.exit()
+
+    def prompt(self):
+        message = input("Enter message: ") + "\n"
+        if message == "q\n":
+            self.__teardown()
+        else:
+            self.start(map(ord, message))
+            self.prompt()
 
 PORT = Arduino.AUTODETECT
 board = Arduino(PORT,debug=True)
 
 baud, f1 = config.read_config()
 transmitter = Transmitter(baud, board, f1) 
-string = input("Enter message: ") + "\n"
-transmitter.start(map(ord, string))
+
+transmitter.prompt()
