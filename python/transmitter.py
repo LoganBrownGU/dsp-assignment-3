@@ -18,19 +18,14 @@ class Transmitter():
             return (t % self.__period_ns) < (self.__period_ns / 2)
 
 
-    def __init__(self, baud, board, f1, f2):
-        assert f1 < f2
+    def __init__(self, baud, board, f):
 
         self.__uart = uart.UART_Tx(baud, lambda q: print(int(q), end="", flush=True))
         self.__board = board
         self.__output_pin = self.__board.get_pin("d:4:o")
         self.__output_pin.write(1)
 
-        self.__lo1 = self.LocalOscillator(f1)
-        self.__lo2 = self.LocalOscillator(f2)
-
-        self.__f1 = f1
-        self.__f2 = f2
+        self.__lo = self.LocalOscillator(f)
 
         self.__lo_timer = None
         self.__lo_update_interval = 0.001
@@ -40,7 +35,7 @@ class Transmitter():
         self.__lo_timer = Timer(self.__lo_update_interval, self.update)
         self.__lo_timer.start()
 
-        self.__output_pin.write(self.__lo2.state() if self.__uart.q else self.__lo1.state())
+        self.__output_pin.write(self.__lo.state() if self.__uart.q else 0)
 
     def start(self, data):
         self.__uart.send_bulk(data, self.end)
@@ -53,7 +48,7 @@ class Transmitter():
 PORT = Arduino.AUTODETECT
 board = Arduino(PORT,debug=True)
 
-baud, f1, f2 = config.read_config()
-transmitter = Transmitter(baud, board, f1, f2) 
+baud, f1 = config.read_config()
+transmitter = Transmitter(baud, board, f1) 
 string = input("Enter message: ") + "\n"
 transmitter.start(map(ord, string))
