@@ -32,10 +32,11 @@ class Transmitter():
         self.__f2 = f2
 
         self.__lo_timer = None
+        self.__lo_update_interval = 0.001
         self.update()
 
     def update(self):
-        self.__lo_timer = Timer(0.5 / (self.__f2), self.update)
+        self.__lo_timer = Timer(self.__lo_update_interval, self.update)
         self.__lo_timer.start()
 
         self.__output_pin.write(self.__lo2.state() if self.__uart.q else self.__lo1.state())

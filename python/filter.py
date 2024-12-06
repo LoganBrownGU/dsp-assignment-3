@@ -7,7 +7,7 @@ import unittest
 
 class IIRFilter():
     def __init__(self, fs, fc1 ):
-       self.b, self.a = self.bandpass(fs, fc1-5, fc1+5)
+       self.b, self.a = self.bandpass(fs, fc1-7, fc1+7)
        
        # normalise the coefficients
        self.b = [ b_i / self.a[0] for b_i in self.b ]

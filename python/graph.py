@@ -9,14 +9,14 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton
 import pyqtgraph as pg
 
 class Graph(QMainWindow):
-    def __init__(self, title, n_plots, back_samples):
+    def __init__(self, title, n_plots, back_samples, ylim=[0,1]):
         super(Graph, self).__init__()
 
         self.back_samples = back_samples
         self.setWindowTitle(title)
 
         self.time_plot = pg.PlotWidget()
-        self.time_plot.setYRange(0, 0.1)
+        self.time_plot.setYRange(ylim[0], ylim[1])
         # self.time_plot_curve1 = self.time_plot.plot([], symbolPen=pg.mkPen(color=(200, 200, 255)))
         # self.time_plot_curve2 = self.time_plot.plot([])
         self.setCentralWidget(self.time_plot)

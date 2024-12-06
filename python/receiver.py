@@ -40,12 +40,13 @@ class Receiver():
         self.__board.analog[analogue_channel].register_callback(self.__poll)
         self.__board.analog[analogue_channel].enable_reporting()
         self.__temp_buf = ThreadSafeQueue()
-        self.__buf1 = uart.RingBuffer(int(sampling_rate/f1))
-        self.__buf2 = uart.RingBuffer(int(sampling_rate/f2))
+        self.__buf1 = uart.RingBuffer(int(2 * sampling_rate/f1))
+        self.__buf2 = uart.RingBuffer(int(2 * sampling_rate/f2))
         self.__filter1 = Filter(sampling_rate, f1)
         self.__filter2 = Filter(sampling_rate, f2)
 
-        self.__graph = Graph("Filtered and averaged", 2, 2000)
+        self.__filtered_graph = Graph("Filtered and averaged", 2, 2000, ylim=[0, 0.2])
+        self.__raw_graph = Graph("Raw data", 1, 500)
 
         Timer(0.01, self.__update).start()
 
@@ -54,6 +55,7 @@ class Receiver():
 
         data = self.__temp_buf.pop()
         while (data != None):
+            self.__raw_graph.add_sample(data, 0)
             a1 = self.__filter1.filter(data)
             a2 = self.__filter2.filter(data)
             self.__buf1.append(abs(a1))
@@ -62,10 +64,10 @@ class Receiver():
             a1 = np.max(self.__buf1)
             a2 = np.max(self.__buf2)
 
-            self.__graph.add_sample(a1, 0)
-            self.__graph.add_sample(a2, 1)
+            self.__filtered_graph.add_sample(a1, 0)
+            self.__filtered_graph.add_sample(a2, 1)
 
-            thresh = 0.02
+            thresh = 0.035
             self.__uart.d = 0 if a2 < thresh else 1
 
             data = self.__temp_buf.pop()
