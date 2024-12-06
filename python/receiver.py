@@ -7,7 +7,7 @@ import scipy.signal as signal
 import matplotlib.pyplot as plt
 import matplotlib
 from pyfirmata2 import Arduino
-from threading import Condition, Timer
+from threading import Condition, Timer, Thread
 from graph import Graph
 
 matplotlib.use('Qt5Agg')
@@ -43,23 +43,27 @@ class Receiver():
         self.__buf = uart.RingBuffer(int(2 * sampling_rate/f))
         self.__filter = Filter(sampling_rate, f)
 
-        self.__filtered_graph = Graph("Filtered and averaged", 1, 2 * sampling_rate, ylim=[0, 0.2])
+        self.__filtered_graph = Graph("Filtered", 1, 5 * f, ylim=[-0.2, 0.2])
+        self.__averaged_graph = Graph("Filtered and averaged", 1, 2 * sampling_rate, ylim=[0, 0.2])
         self.__raw_graph = Graph("Raw data", 1, sampling_rate / 2)
 
-        Timer(0.01, self.__update).start()
+        self.__update_timer = Timer(0.01, self.__update)
+        self.__update_timer.start()
 
     def __update(self):
-        Timer(0.01, self.__update).start()
+        self.__update_timer = Timer(0.01, self.__update)
+        self.__update_timer.start()
 
         data = self.__temp_buf.pop()
         while (data != None):
             self.__raw_graph.add_sample(data, 0)
             x = self.__filter.filter(data)
             self.__buf.append(abs(x))
+            self.__filtered_graph.add_sample(x, 0)
 
             x = np.max(self.__buf)
 
-            self.__filtered_graph.add_sample(x, 0)
+            self.__averaged_graph.add_sample(x, 0)
 
             thresh = 0.035
             self.__uart.d = 0 if x < thresh else 1
@@ -72,6 +76,14 @@ class Receiver():
     def end(self):
         print(chr(self.__uart.get_buf()), end="", flush=True)
 
+    def teardown(self):
+        self.__averaged_graph.close()
+        self.__filtered_graph.close()
+        self.__raw_graph.close()
+        self.__uart.stop()
+        self.__board.exit()
+        self.__update_timer.cancel()    
+
 app = QtWidgets.QApplication([])
 
 PORT = Arduino.AUTODETECT
@@ -81,4 +93,7 @@ baud, f = config.read_config()
 receiver = Receiver(baud, 1000, board, 1, f)
 time.sleep(1)
 
-app.exec()
+Thread(target = app.exec).start()
+
+input("")
+receiver.teardown()
