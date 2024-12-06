@@ -1,6 +1,6 @@
 import uart
-from firfilter import FIRFilter 
 from filter import Filter
+import config
 import time
 import numpy as np
 import scipy.signal as signal
@@ -83,9 +83,7 @@ app = QtWidgets.QApplication([])
 PORT = Arduino.AUTODETECT
 board = Arduino(PORT,debug=True)
 
-baud = 10
-f1 = 20
-f2 = 40
+baud, f1, f2 = config.read_config()
 receiver = Receiver(baud, 500, board, 1, f1, f2)
 time.sleep(1)
 

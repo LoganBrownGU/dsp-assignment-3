@@ -1,4 +1,5 @@
 import uart
+import config
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -52,6 +53,7 @@ class Transmitter():
 PORT = Arduino.AUTODETECT
 board = Arduino(PORT,debug=True)
 
-transmitter = Transmitter(10, board, 20, 40) 
+baud, f1, f2 = config.read_config()
+transmitter = Transmitter(baud, board, f1, f2) 
 string = input("Enter message: ") + "\n"
 transmitter.start(map(ord, string))
