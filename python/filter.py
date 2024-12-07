@@ -6,47 +6,37 @@ import matplotlib.pyplot as plt
 import unittest
 
 class IIRFilter():
-    def __init__(self, fs, fc1 ):
-       self.b, self.a = self.bandpass(fs, fc1-7, fc1+7)
+    def __init__(self, coeffs):
+       self.b = coeffs[0:3] 
+       self.a = coeffs[4:]
        
-       # normalise the coefficients
-       self.b = [ b_i / self.a[0] for b_i in self.b ]
-       self.a = [ a_i / self.a[0] for a_i in self.a ]
-       
-       self.buf1_in = 0
-       self.buf2_in = 0
-       self.buf1_out = 0
-       self.buf2_out = 0
-
-    def bandpass(self, fs, f1 , f2):
-        nyquist = fs / 2
-        f1 = min(nyquist, max(0.001, f1 / nyquist))
-        f2 = min(nyquist, max(0.001, f2 / nyquist))
-        
-        b, a = butter(1, [f1, f2], btype = 'bandpass')
-    
-        return b, a
+       self.tb1 = 0
+       self.tb2 = 0
+       self.ta1 = 0
+       self.ta2 = 0
 
     def filter(self, sample):
-       # apply direct form i filter
-       input_acc  = sample - self.a[1] * self.buf1_in - self.a[2] * self.buf2_in
-       output_acc = input_acc * self.b[0] + self.buf1_in * self.b[1] + self.b[2] * self.buf2_in
+        accumulator  = sample   * self.b[0]
+        accumulator += self.tb1 * self.b[1]
+        accumulator += self.tb2 * self.b[2]
+        accumulator -= self.ta1 * self.a[0]
+        accumulator -= self.ta2 * self.a[1]
 
-       # update buffers
-       self.buf2_in = self.buf1_in
-       self.buf1_in = input_acc
-       self.buf2_out = self.buf1_out
-       self.buf1_out = output_acc
+        self.tb2 = self.tb1
+        self.tb1 = sample
+        self.ta2 = self.ta1
+        self.ta1 = accumulator
 
-       return output_acc
+        return accumulator
 
 class Filter():
     def __init__(self, fs, fc1):
-        self.__iirs = [IIRFilter(fs, fc1) for i in range(4)]
+        coeffs = butter(2, [fc1-5, fc1+5], btype="bandpass", fs=fs, output="sos")
+        print(coeffs)
+        self.__iirs = [IIRFilter(c) for c in coeffs]
 
     def filter(self, sample):
-        for iir in self.__iirs:
-           sample = iir.filter(sample)
+        for iir in self.__iirs: sample = iir.filter(sample)
 
         return sample
 
