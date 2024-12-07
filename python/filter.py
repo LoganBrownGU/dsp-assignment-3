@@ -30,9 +30,8 @@ class IIRFilter():
         return accumulator
 
 class Filter():
-    def __init__(self, fs, fc1):
-        coeffs = butter(2, [fc1-5, fc1+5], btype="bandpass", fs=fs, output="sos")
-        print(coeffs)
+    def __init__(self, fs, f_pass):
+        coeffs = butter(8, [f_pass-5, f_pass+5], btype="bandpass", fs=fs, output="sos")
         self.__iirs = [IIRFilter(c) for c in coeffs]
 
     def filter(self, sample):
@@ -91,9 +90,7 @@ class FilterTest(unittest.TestCase):
         fs = 1000
         signal = self.gen_test_signal(fs)
 
-        filter = Filter(fs, f_pass)
-        out_signal = [filter.filter(x) for x in signal]
-        filter = IIRFilter(fs, f_pass)
+        filter = IIRFilter(butter(1, [f_pass-5, f_pass+5], btype="bandpass", fs=fs, output="sos")[0])
         out_signal = [filter.filter(x) for x in signal]
         self.assertAlmostEqual(np.abs(np.fft.fft(out_signal))[f_pass], np.abs(np.fft.fft(signal))[f_pass], places=self.tolerance_places)
 
