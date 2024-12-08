@@ -56,10 +56,11 @@ class Transmitter():
             self.start(map(ord, message))
             self.prompt()
 
-PORT = Arduino.AUTODETECT
-board = Arduino(PORT,debug=True)
+if __name__ == "__main__":
+    PORT = Arduino.AUTODETECT
+    board = Arduino(PORT,debug=True)
 
-baud, f1 = config.read_config()
-transmitter = Transmitter(baud, board, f1) 
+    baud, f1 = config.read_config()
+    transmitter = Transmitter(baud, board, f1) 
 
-transmitter.prompt()
+    transmitter.prompt()

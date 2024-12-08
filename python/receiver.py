@@ -39,13 +39,16 @@ class Receiver():
         self.__board.samplingOn(1000 / sampling_rate)
         self.__board.analog[analogue_channel].register_callback(self.__poll)
         self.__board.analog[analogue_channel].enable_reporting()
-        self.__temp_buf = ThreadSafeQueue()
+        self.__processing_queue = ThreadSafeQueue()
         self.__buf = uart.RingBuffer(int(2 * sampling_rate/f))
         self.__filter = Filter(sampling_rate, f)
 
         self.__filtered_graph = Graph("Filtered", 1, 5 * f, ylim=[-0.2, 0.2])
         self.__averaged_graph = Graph("Filtered and averaged", 1, 2 * sampling_rate, ylim=[0, 0.2])
         self.__raw_graph = Graph("Raw data", 1, sampling_rate / 2)
+
+        self.__callback_graphing = uart.RingBuffer((sampling_rate / baud) * 10)     # save approx. one byte's worth
+        self.__uart_input_graphing = uart.RingBuffer((sampling_rate / baud) * 10)     
 
         self.__update_timer = Timer(0.01, self.__update)
         self.__update_timer.start()
@@ -54,7 +57,7 @@ class Receiver():
         self.__update_timer = Timer(0.01, self.__update)
         self.__update_timer.start()
 
-        data = self.__temp_buf.pop()
+        data = self.__processing_queue.pop()
         while (data != None):
             self.__raw_graph.add_sample(data, 0)
             x = self.__filter.filter(data)
@@ -65,13 +68,15 @@ class Receiver():
 
             self.__averaged_graph.add_sample(x, 0)
 
-            thresh = 0.035
+            thresh = 0.03
             self.__uart.d = 0 if x < thresh else 1
 
-            data = self.__temp_buf.pop()
+            data = self.__processing_queue.pop()
     
     def __poll(self, data):
-        self.__temp_buf.append(data)
+        start_time = time.time_ns()
+        self.__processing_queue.append(data)
+        self.__callback_graphing.append(time.time_ns() - start_time)
 
     def end(self):
         print(chr(self.__uart.get_buf()), end="", flush=True)
@@ -84,16 +89,20 @@ class Receiver():
         self.__board.exit()
         self.__update_timer.cancel()    
 
-app = QtWidgets.QApplication([])
+    def get_graphing_data(self):
+        return self.__callback_graphing, self.__uart_input_graphing
 
-PORT = Arduino.AUTODETECT
-board = Arduino(PORT,debug=True)
+if __name__ == "__main__":
+    app = QtWidgets.QApplication([])
 
-baud, f = config.read_config()
-receiver = Receiver(baud, 1000, board, 1, f)
-time.sleep(1)
+    PORT = Arduino.AUTODETECT
+    board = Arduino(PORT,debug=True)
 
-Thread(target = app.exec).start()
+    baud, f = config.read_config()
+    receiver = Receiver(baud, 1000, board, 1, f)
+    time.sleep(1)
 
-input("")
-receiver.teardown()
+    Thread(target = app.exec).start()
+
+    input("")
+    receiver.teardown()
