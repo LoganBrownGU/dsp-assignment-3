@@ -63,7 +63,7 @@ To remove these unwanted frequencies, an 8\textsuperscript{th} order (or rather,
 \section{Other processing}
 The output of a narrow bandpass filter centered on the fundamental frequency of a square wave will inevitably be a sine wave, since it will discard all harmonics of the square wave (indeed, this can be seen in the filtered data in Figure \ref{fig:filtered}). To turn this sine wave into a low or high digital signal, some additional processing was required. 
 
-This involved taking the mean of the last 2 cycles of the wave. The mean of a sine wave is always 0, so first the absolute value of the data was taken, then averaged. This resulted in a fairly steady high or low value.
+This involved taking the mean of the last 2 cycles of the wave. The mean of a sine wave is always 0, so first the absolute value of the data was taken, then averaged. This resulted in a fairly steady high or low value. A static threshold was used to determine whether the value constituted a logic high or logic low.
 
 \section{Baud rate}
 Finally, the baud rate of the UARTs was set to 10. The delay of the IIR filter and the response of the phototransistor were slow enough that sending faster than this would not allow the logic levels enough time to settle, resulting in missed bits. Naturally, this would be too slow for a real world scenario, but with more research and engineering it would be relatively trivial to make this faster. 
@@ -108,10 +108,12 @@ Figure \ref{fig:uart} shows how the transmitter sent its data (in this case, the
 
 While it was important to measure the callback time, it can be seen from Figure \ref{fig:sampling} that the time taken was always far below the limit of 1 ms, with the longest period being just 30 \textmu s.
 
-To test the accuracy, a 100 byte message was sent.
+To test the accuracy, a 128 byte message was sent (taking 141 seconds). Across 5 runs, the mean accuracy (i.e. the number of correct bits divided by the number of bits in the message) was 0.972. This could be increased by using a parity bit, but this would require at least half-duplex, as the receiver would have to have a mechanism for requesting retransmission of dropped frames. 
 
 \section{Conclusion}
 It was possible to send large amounts of data with very little loss, albeit quite slowly. The IIR filter performed well, eliminating all environmental noise and providing a clean signal to the UART receiver, though there was a significant delay in the response that limited the baud rate.
+
+Some potential improvements may involve: increasing the accuracy with parity bit(s); increasing the number of sending frequencies to increase the bits per symbol beyond 1; quickening the response of the filtering; or adding a mechanism to automatically choose a threshold, rather than manually setting it.  
 
 \end{multicols}
 \pagebreak

@@ -25,8 +25,8 @@ class ThreadSafeQueue():
 
 
 class Receiver():
-    def __init__(self, baud, sampling_rate, board, analogue_channel, f, enable_graphs, save_data):
-        self.__uart = uart.UART_Rx(baud, self.end)
+    def __init__(self, baud, sampling_rate, board, analogue_channel, f, enable_graphs, save_data, available_callback=None):
+        self.__uart = uart.UART_Rx(baud, self.print_char if available_callback == None else available_callback)
         self.__board = board
         self.__board.samplingOn(1000 / sampling_rate)
         self.__board.analog[analogue_channel].register_callback(self.__poll)
@@ -87,7 +87,10 @@ class Receiver():
         except AttributeError as e:
             pass    # Occasionally a spurious attribute error is thrown  
 
-    def end(self):
+    def get_uart_buf(self):
+        return self.__uart.get_buf()
+
+    def print_char(self):
         print(chr(self.__uart.get_buf()), end="", flush=True)
 
     def teardown(self):

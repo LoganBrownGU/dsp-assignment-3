@@ -1,13 +1,13 @@
 # Fdb version 4
-["pdflatex"] 1733698797.48833 "/home/logan/Documents/Uni/dsp/dsp-assignment-3/report/report.tex" "report.pdf" "report" 1733698799.41888 0
+["pdflatex"] 1733700904.32098 "/home/logan/Documents/Uni/dsp/dsp-assignment-3/report/report.tex" "report.pdf" "report" 1733700906.57748 0
   "../python/config.py" 1733506096.67207 214 c5b39a2a4ea15de5e2ee52c569dbfd41 ""
   "../python/filter.py" 1733692531.44272 3956 c3c3d9485ccdd5404be39580f24fbf6d ""
   "../python/graph.py" 1733508071.44628 1568 d2b653d2bb72cb689c19d96385e3e6de ""
-  "../python/receiver.py" 1733695419.64287 4040 d6664089e7b6b2be0941a5c26d23d8d6 ""
+  "../python/receiver.py" 1733699301.38858 4199 0a8bffa91fa090f7ed29c580850efd21 ""
   "../python/transmitter.py" 1733698796.89048 1761 bafe693e108ffa2e48bfeacc5095f53c ""
   "../python/uart.py" 1733405773.59296 7681 73cf473445fa44a735066cd3fd0a709c ""
   "/etc/texmf/web2c/texmf.cnf" 1721561080.48223 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/logan/Documents/Uni/dsp/dsp-assignment-3/report/report.tex" 1733698766.14742 8501 ac80e9f5a1b76da09250ab7151859864 ""
+  "/home/logan/Documents/Uni/dsp/dsp-assignment-3/report/report.tex" 1733700903.94327 9241 32477ac8cb6710754aeccfb226fe535d ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/tcrm1000.tfm" 1136768653 1536 e07581a4bb3136ece9eeb4c3ffab8233 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
@@ -138,9 +138,9 @@
   "figures/raw.pdf" 1733696155.52211 20435 a31643b88a5d64c1feba6de50d6beb00 ""
   "figures/sampling.pdf" 1733696154.95909 20190 00128edaf429432d041725477e085889 ""
   "figures/uart.pdf" 1733696155.17409 19737 0e3b52d01db7b45ec6238fbace16368c ""
-  "report.aux" 1733698799.19656 4221 18549581f36c54e81216a6f4d9208bc6 "pdflatex"
-  "report.out" 1733698799.19856 1660 a0b82b6a85cf21bdf009c839d0c19a94 "pdflatex"
-  "report.tex" 1733698766.14742 8501 ac80e9f5a1b76da09250ab7151859864 ""
+  "report.aux" 1733700906.36333 4221 18549581f36c54e81216a6f4d9208bc6 "pdflatex"
+  "report.out" 1733700906.36533 1660 a0b82b6a85cf21bdf009c839d0c19a94 "pdflatex"
+  "report.tex" 1733700903.94327 9241 32477ac8cb6710754aeccfb226fe535d ""
   (generated)
   "report.aux"
   "report.log"
