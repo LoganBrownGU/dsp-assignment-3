@@ -44,7 +44,7 @@ class Transmitter():
     def end_sending(self):
         print("Done")
     
-    def __teardown(self):
+    def teardown(self):
         self.__lo_timer.cancel()
         self.__board.exit()
 

@@ -18,9 +18,13 @@ transmitter = Transmitter(baud, board, f)
 
 def callback():
     callback_data, uart_data = receiver.get_graphing_data()
-    plt.plot([x for x in callback_data])
+    receiver.teardown()
+    transmitter.teardown()
+
+    plt.plot(callback_data)
+    plt.plot([0, len(callback_data) - 1], [10**6, 10**6])
     plt.figure()
-    plt.plot([x for x in uart_data])
+    plt.plot(uart_data)
     plt.show()
 
 x = []
@@ -28,6 +32,6 @@ start = time.time_ns()
 x.append(time.time_ns() - start)
 print(time.time_ns() - start)
 
-message = "w"
+message = "S"
 time.sleep(1)
 transmitter.start(map(ord, message), callback=callback)

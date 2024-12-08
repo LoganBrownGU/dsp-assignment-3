@@ -44,8 +44,8 @@ class Receiver():
             self.__averaged_graph = None
             self.__raw_graph = None
 
-        self.__callback_graphing = uart.RingBuffer(int((sampling_rate / baud) * 20))     # save approx. one byte's worth
-        self.__uart_input_graphing = uart.RingBuffer(int((sampling_rate / baud) * 20))     
+        self.__callback_graphing = []
+        self.__uart_input_graphing = []   
 
         self.__update_timer = Timer(0.01, self.__update)
         self.__update_timer.start()
@@ -72,18 +72,23 @@ class Receiver():
             data = self.__processing_queue.pop()
     
     def __poll(self, data):
-        start_time = time.time_ns()
-        self.__processing_queue.append(data)
-        self.__callback_graphing.append(time.time_ns() - start_time)
-        # print(time.time_ns() - start_time)
+
+        try:
+            start_time = time.time_ns()
+            self.__processing_queue.append(data)
+            processing_time = time.time_ns() - start_time
+            self.__callback_graphing.append(processing_time)
+        except Exception as _:
+            pass    # Occasionally a spurious name error is thrown  
 
     def end(self):
         print(chr(self.__uart.get_buf()), end="", flush=True)
 
     def teardown(self):
-        self.__averaged_graph.close()
-        self.__filtered_graph.close()
-        self.__raw_graph.close()
+        if self.__averaged_graph != None: self.__averaged_graph.close()
+        if self.__filtered_graph != None: self.__filtered_graph.close()
+        if self.__raw_graph != None:      self.__raw_graph.close()
+        
         self.__uart.stop()
         self.__board.exit()
         self.__update_timer.cancel()    
