@@ -36,9 +36,9 @@ class Transmitter():
 
         self.__output_pin.write(self.__lo.state() if self.__uart.q else 0)
 
-    def start(self, data):
+    def start(self, data, callback=None):
         print("Sending...")
-        self.__uart.send_bulk(data, self.end_sending)
+        self.__uart.send_bulk(data, self.end_sending if callback == None else callback)
 
 
     def end_sending(self):

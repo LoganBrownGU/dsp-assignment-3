@@ -3,17 +3,9 @@ from filter import Filter
 import config
 import time
 import numpy as np
-import scipy.signal as signal
-import matplotlib.pyplot as plt
-import matplotlib
 from pyfirmata2 import Arduino
 from threading import Condition, Timer, Thread
 from graph import Graph
-
-matplotlib.use('Qt5Agg')
-from PyQt6 import QtWidgets
-
-samples = [[], []]
 
 class ThreadSafeQueue():
     def __init__(self):
@@ -33,7 +25,7 @@ class ThreadSafeQueue():
 
 
 class Receiver():
-    def __init__(self, baud, sampling_rate, board, analogue_channel, f):
+    def __init__(self, baud, sampling_rate, board, analogue_channel, f, enable_graphs):
         self.__uart = uart.UART_Rx(baud, self.end)
         self.__board = board
         self.__board.samplingOn(1000 / sampling_rate)
@@ -43,12 +35,17 @@ class Receiver():
         self.__buf = uart.RingBuffer(int(2 * sampling_rate/f))
         self.__filter = Filter(sampling_rate, f)
 
-        self.__filtered_graph = Graph("Filtered", 1, 5 * f, ylim=[-0.2, 0.2])
-        self.__averaged_graph = Graph("Filtered and averaged", 1, 2 * sampling_rate, ylim=[0, 0.2])
-        self.__raw_graph = Graph("Raw data", 1, sampling_rate / 2)
+        if enable_graphs: 
+            self.__filtered_graph = Graph("Filtered", 1, 5 * f, ylim=[-0.2, 0.2])
+            self.__averaged_graph = Graph("Filtered and averaged", 1, 2 * sampling_rate, ylim=[0, 0.2])
+            self.__raw_graph = Graph("Raw data", 1, sampling_rate / 2)
+        else:
+            self.__filtered_graph = None
+            self.__averaged_graph = None
+            self.__raw_graph = None
 
-        self.__callback_graphing = uart.RingBuffer((sampling_rate / baud) * 10)     # save approx. one byte's worth
-        self.__uart_input_graphing = uart.RingBuffer((sampling_rate / baud) * 10)     
+        self.__callback_graphing = uart.RingBuffer(int((sampling_rate / baud) * 20))     # save approx. one byte's worth
+        self.__uart_input_graphing = uart.RingBuffer(int((sampling_rate / baud) * 20))     
 
         self.__update_timer = Timer(0.01, self.__update)
         self.__update_timer.start()
@@ -59,14 +56,15 @@ class Receiver():
 
         data = self.__processing_queue.pop()
         while (data != None):
-            self.__raw_graph.add_sample(data, 0)
+            if self.__raw_graph != None: self.__raw_graph.add_sample(data, 0)
             x = self.__filter.filter(data)
             self.__buf.append(abs(x))
-            self.__filtered_graph.add_sample(x, 0)
+            if self.__filtered_graph != None: self.__filtered_graph.add_sample(x, 0)
 
             x = np.max(self.__buf)
 
-            self.__averaged_graph.add_sample(x, 0)
+            if self.__averaged_graph != None: self.__averaged_graph.add_sample(x, 0)
+            self.__uart_input_graphing.append(x)
 
             thresh = 0.03
             self.__uart.d = 0 if x < thresh else 1
@@ -77,6 +75,7 @@ class Receiver():
         start_time = time.time_ns()
         self.__processing_queue.append(data)
         self.__callback_graphing.append(time.time_ns() - start_time)
+        # print(time.time_ns() - start_time)
 
     def end(self):
         print(chr(self.__uart.get_buf()), end="", flush=True)
@@ -93,13 +92,17 @@ class Receiver():
         return self.__callback_graphing, self.__uart_input_graphing
 
 if __name__ == "__main__":
+    import matplotlib
+    matplotlib.use('Qt5Agg')
+    from PyQt6 import QtWidgets
+
     app = QtWidgets.QApplication([])
 
     PORT = Arduino.AUTODETECT
     board = Arduino(PORT,debug=True)
 
     baud, f = config.read_config()
-    receiver = Receiver(baud, 1000, board, 1, f)
+    receiver = Receiver(baud, 1000, board, 1, f, True)
     time.sleep(1)
 
     Thread(target = app.exec).start()

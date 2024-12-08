@@ -1,24 +1,33 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from receiver import Receiver
+from transmitter import Transmitter
+import config
+from pyfirmata2 import Arduino
+import time
+import uart
 
-data = np.loadtxt("dump.dat")
-# data -= max(data)
+sampling_rate = 500
+baud, f = config.read_config()
+PORT = Arduino.AUTODETECT
+board = Arduino(PORT,debug=True)
+channel = 1
 
+receiver = Receiver(baud, sampling_rate, board, channel, f, False)
+transmitter = Transmitter(baud, board, f)
 
-fft = np.fft.fft(data)
-plt.plot(np.linspace(0, 1000, len(fft)), fft)
-fhp = 1
-fc1 = int(40 * (len(fft) / 1000))
-fc2 = int(60 * (len(fft) / 1000))
-print(fhp)
-fft[fc1:fc2] = 0
-fft[:fhp] = 0
-fft[-fc2:-fc1] = 0
-fft[-fhp:] = 0
-plt.plot(np.linspace(0, 1000, len(fft)), fft)
-plt.ylim(0, 2)
+def callback():
+    callback_data, uart_data = receiver.get_graphing_data()
+    plt.plot([x for x in callback_data])
+    plt.figure()
+    plt.plot([x for x in uart_data])
+    plt.show()
 
-plt.figure()
-plt.plot(data - max(data))
-plt.plot(np.fft.ifft(fft))
-plt.show()
+x = []
+start = time.time_ns()
+x.append(time.time_ns() - start)
+print(time.time_ns() - start)
+
+message = "w"
+time.sleep(1)
+transmitter.start(map(ord, message), callback=callback)
