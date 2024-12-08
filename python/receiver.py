@@ -25,7 +25,7 @@ class ThreadSafeQueue():
 
 
 class Receiver():
-    def __init__(self, baud, sampling_rate, board, analogue_channel, f, enable_graphs):
+    def __init__(self, baud, sampling_rate, board, analogue_channel, f, enable_graphs, save_data):
         self.__uart = uart.UART_Rx(baud, self.end)
         self.__board = board
         self.__board.samplingOn(1000 / sampling_rate)
@@ -44,8 +44,11 @@ class Receiver():
             self.__averaged_graph = None
             self.__raw_graph = None
 
-        self.__callback_graphing = []
-        self.__uart_input_graphing = []   
+        self.__save_data = save_data
+        self.__callback_data = []
+        self.__uart_input_data = []
+        self.__filtered_data = []   
+        self.__input_data = []   
 
         self.__update_timer = Timer(0.01, self.__update)
         self.__update_timer.start()
@@ -56,15 +59,19 @@ class Receiver():
 
         data = self.__processing_queue.pop()
         while (data != None):
+            if self.__save_data: self.__input_data.append(data)
+
             if self.__raw_graph != None: self.__raw_graph.add_sample(data, 0)
             x = self.__filter.filter(data)
             self.__buf.append(abs(x))
+
+            if self.__save_data: self.__filtered_data.append(x)
             if self.__filtered_graph != None: self.__filtered_graph.add_sample(x, 0)
 
             x = np.max(self.__buf)
 
             if self.__averaged_graph != None: self.__averaged_graph.add_sample(x, 0)
-            self.__uart_input_graphing.append(x)
+            if self.__save_data: self.__uart_input_data.append(x)
 
             thresh = 0.03
             self.__uart.d = 0 if x < thresh else 1
@@ -77,7 +84,7 @@ class Receiver():
             start_time = time.time_ns()
             self.__processing_queue.append(data)
             processing_time = time.time_ns() - start_time
-            self.__callback_graphing.append(processing_time)
+            if self.__save_data: self.__callback_data.append(processing_time)
         except Exception as _:
             pass    # Occasionally a spurious name error is thrown  
 
@@ -88,13 +95,13 @@ class Receiver():
         if self.__averaged_graph != None: self.__averaged_graph.close()
         if self.__filtered_graph != None: self.__filtered_graph.close()
         if self.__raw_graph != None:      self.__raw_graph.close()
-        
+
         self.__uart.stop()
         self.__board.exit()
         self.__update_timer.cancel()    
 
     def get_graphing_data(self):
-        return self.__callback_graphing, self.__uart_input_graphing
+        return self.__callback_data, self.__uart_input_data, self.__filtered_data, self.__input_data
 
 if __name__ == "__main__":
     import matplotlib
@@ -107,7 +114,7 @@ if __name__ == "__main__":
     board = Arduino(PORT,debug=True)
 
     baud, f = config.read_config()
-    receiver = Receiver(baud, 1000, board, 1, f, True)
+    receiver = Receiver(baud, 1000, board, 1, f, True, False)
     time.sleep(1)
 
     Thread(target = app.exec).start()
