@@ -37,7 +37,7 @@ To frame the data, UART (universal asynchronous receiver-transmitter) was chosen
 The \texttt{UART\_Tx} class allows the user to load an array of bytes, which are then \say{sent} automatically. The \texttt{UART\_Rx} class constantly listens for changes at 8 times the baud rate, and outputs a byte as soon as it determines that it has received one.
 
 \section{Set up}
-The laser was aimed at a phototransistor which was set up in a voltage-divider configuration, as outlined in Figure \ref{},\ref{fig:dataflow}. An Arduino connected to a computer measured the voltage across the resistor.
+The laser was aimed at a phototransistor which was set up in a voltage-divider configuration, as outlined in Figure \ref{fig:circuit},\ref{fig:dataflow}. An Arduino connected to a computer measured the voltage across the resistor. As only one Arduino was available, the same device sent the signal as received it, though the setup would work equally with two separate devices. 
 
 An FSK modulation scheme was used. A logic 0 corresponds to the laser being switched off, effectively 0 Hz, while a logic 1 corresponds to the laser being keyed on and off at a given frequency. This was chosen to be 100 Hz, as it would be significantly higher than any environmental optical and electronic noise, but low enough that it can be reliably sampled at 1000 Hz with minimal aliasing.
 
@@ -45,6 +45,12 @@ An FSK modulation scheme was used. A logic 0 corresponds to the laser being swit
     \includegraphics[width=\linewidth]{figures/dataflow.pdf}
     \caption{Dataflow diagram}
     \label{fig:dataflow}
+\end{figure}
+
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{figures/circuit.pdf}
+    \caption{Circuit diagram}
+    \label{fig:circuit}
 \end{figure}
 
 \section{Filtering}
@@ -102,8 +108,10 @@ Figure \ref{fig:uart} shows how the transmitter sent its data (in this case, the
 
 While it was important to measure the callback time, it can be seen from Figure \ref{fig:sampling} that the time taken was always far below the limit of 1 ms, with the longest period being just 30 \textmu s.
 
+To test the accuracy, a 100 byte message was sent.
+
 \section{Conclusion}
-It was possible to send large amounts of data with no loss, albeit quite slowly. The IIR filter performed well, eliminating all environmental noise and providing a clean signal to the UART receiver, though there was a significant delay in the response that limited the baud rate.
+It was possible to send large amounts of data with very little loss, albeit quite slowly. The IIR filter performed well, eliminating all environmental noise and providing a clean signal to the UART receiver, though there was a significant delay in the response that limited the baud rate.
 
 \end{multicols}
 \pagebreak

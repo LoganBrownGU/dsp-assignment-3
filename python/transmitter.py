@@ -51,7 +51,7 @@ class Transmitter():
     def prompt(self):
         message = input("Enter message: ") + "\n"
         if message == "q\n":
-            self.__teardown()
+            self.teardown()
         else:
             self.start(map(ord, message))
             self.prompt()
