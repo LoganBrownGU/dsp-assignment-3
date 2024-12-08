@@ -14,14 +14,14 @@ board = Arduino(PORT,debug=True)
 channel = 1
 
 receiver = Receiver(baud, sampling_rate, board, channel, f, False, True)
-transmitter = Transmitter(baud, board, f)
+transmitter = Transmitter(baud, board, f, True)
 
 def callback():
-    callback_data, uart_data, filtered_data, input_data = receiver.get_graphing_data()
     receiver.teardown()
     transmitter.teardown()
+    callback_data, uart_data, filtered_data, input_data = receiver.get_graphing_data()
     
-    backsamples = 1000
+    backsamples = 1500
     np.savetxt("assets/callback.dat", callback_data[-backsamples:])
     np.savetxt("assets/uart.dat", uart_data[-backsamples:])
     np.savetxt("assets/filtered.dat", filtered_data[-backsamples:])

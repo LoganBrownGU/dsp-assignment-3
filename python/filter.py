@@ -31,7 +31,7 @@ class IIRFilter():
 
 class Filter():
     def __init__(self, fs, f_pass):
-        coeffs = butter(8, [f_pass-5, f_pass+5], btype="bandpass", fs=fs, output="sos")
+        coeffs = butter(2, [f_pass-5, f_pass+5], btype="bandpass", fs=fs, output="sos")
         self.__iirs = [IIRFilter(c) for c in coeffs]
 
     def filter(self, sample):

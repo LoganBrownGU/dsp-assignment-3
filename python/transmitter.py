@@ -18,7 +18,7 @@ class Transmitter():
             return (t % self.__period_ns) < (self.__period_ns / 2)
 
 
-    def __init__(self, baud, board, f):
+    def __init__(self, baud, board, f, save_data):
         self.__uart = uart.UART_Tx(baud, None)
         self.__board = board
         self.__output_pin = self.__board.get_pin("d:4:o")
@@ -28,10 +28,10 @@ class Transmitter():
 
         self.__lo_timer = None
         self.__lo_update_interval = 0.001
-        self.update()
+        self.__update()
 
-    def update(self):
-        self.__lo_timer = Timer(self.__lo_update_interval, self.update)
+    def __update(self):
+        self.__lo_timer = Timer(self.__lo_update_interval, self.__update)
         self.__lo_timer.start()
 
         self.__output_pin.write(self.__lo.state() if self.__uart.q else 0)
@@ -61,6 +61,6 @@ if __name__ == "__main__":
     board = Arduino(PORT,debug=True)
 
     baud, f1 = config.read_config()
-    transmitter = Transmitter(baud, board, f1) 
+    transmitter = Transmitter(baud, board, f1, False) 
 
     transmitter.prompt()
