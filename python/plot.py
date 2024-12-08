@@ -1,49 +1,33 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from receiver import Receiver
-from transmitter import Transmitter
-import config
-from pyfirmata2 import Arduino
-import time
-import uart
+import numpy as np
 
-sampling_rate = 500
-baud, f = config.read_config()
-PORT = Arduino.AUTODETECT
-board = Arduino(PORT,debug=True)
-channel = 1
+callback = np.loadtxt("assets/callback.dat")
+uart = np.loadtxt("assets/uart.dat")
+filtered  = np.loadtxt("assets/filtered.dat")
+input = np.loadtxt("assets/input.dat")
 
-receiver = Receiver(baud, sampling_rate, board, channel, f, False, True)
-transmitter = Transmitter(baud, board, f)
+def t(data):
+    return np.linspace(0, len(data) / 1000, len(data))
 
-def callback():
-    callback_data, uart_data, filtered_data, input_data = receiver.get_graphing_data()
-    receiver.teardown()
-    transmitter.teardown()
+plt.plot(t(callback), callback / (10**6), label="Time taken per sample")
+plt.plot([0, t(callback)[-1]], [1, 1], "r--", label="Limit")
+plt.xlabel("Time (s)")
+plt.ylabel("Sample time (ms)")
+plt.legend()
 
-    plt.plot(callback_data)
-    plt.plot([0, len(callback_data) - 1], [10**6, 10**6], "r--")
+plt.figure()
+plt.plot(t(uart), uart)
+plt.xlabel("Time (s)")
+plt.ylabel("Amplitude")
 
-    plt.figure()
-    plt.plot(uart_data)
+plt.figure()
+plt.plot(t(filtered), filtered)
+plt.xlabel("Time (s)")
+plt.ylabel("Amplitude")
 
-    plt.figure()
-    plt.plot(input_data)
+plt.figure()
+plt.plot(t(input), input)
+plt.xlabel("Time (s)")
+plt.ylabel("Amplitude")
 
-    plt.figure()
-    plt.plot(filtered_data)
-
-    plt.figure()
-    plt.plot(uart_data)
-    
-    
-    plt.show()
-
-x = []
-start = time.time_ns()
-x.append(time.time_ns() - start)
-print(time.time_ns() - start)
-
-message = "S"
-time.sleep(1)
-transmitter.start(map(ord, message), callback=callback)
+plt.show()

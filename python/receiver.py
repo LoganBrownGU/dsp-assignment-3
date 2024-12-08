@@ -85,8 +85,8 @@ class Receiver():
             self.__processing_queue.append(data)
             processing_time = time.time_ns() - start_time
             if self.__save_data: self.__callback_data.append(processing_time)
-        except Exception as _:
-            pass    # Occasionally a spurious name error is thrown  
+        except AttributeError as e:
+            pass    # Occasionally a spurious attribute error is thrown  
 
     def end(self):
         print(chr(self.__uart.get_buf()), end="", flush=True)
