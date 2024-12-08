@@ -9,6 +9,7 @@
 \usepackage{hyperref}
 \usepackage{smartref}
 \usepackage{svg}
+\usepackage{textgreek}
 \usepackage[a4paper,margin=2cm]{geometry}
 
 \lstset{basicstyle=\ttfamily\footnotesize,breaklines=true}
@@ -53,13 +54,56 @@ The main sources of noise are the 50 Hz mains electric hum, very low-frequency d
 
 To remove these unwanted frequencies, an 8\textsuperscript{th} order (or rather, a chain of 4 2\textsuperscript{nd} order) bandpass IIR filter was used, with the passband being 5 Hz either side of the sending frequency. 
 
+\section{Other processing}
+The output of a narrow bandpass filter centered on the fundamental frequency of a square wave will inevitably be a sine wave, since it will discard all harmonics of the square wave (indeed, this can be seen in the filtered data in Figure \ref{fig:filtered}). To turn this sine wave into a low or high digital signal, some additional processing was required. 
+
+This involved taking the mean of the last 2 cycles of the wave. The mean of a sine wave is always 0, so first the absolute value of the data was taken, then averaged. This resulted in a fairly steady high or low value.
+
 \section{Baud rate}
 Finally, the baud rate of the UARTs was set to 10. The delay of the IIR filter and the response of the phototransistor were slow enough that sending faster than this would not allow the logic levels enough time to settle, resulting in missed bits. Naturally, this would be too slow for a real world scenario, but with more research and engineering it would be relatively trivial to make this faster. 
 
+\section{Sampling}
+Sampling was performed using an Arduino running \textit{pyFirmata2}. This involves using a callback function in Python, which is run periodically at a fixed interval. 
+
+To ensure that the sampling was correct, the time taken for the callback to run was measured and stored. The results of this are in Figure \ref{fig:sampling}. 
+
+If the time taken for the sampling callback exceeds the sampling period, the actual sampling rate will decrease. If the filtering is happening with an assumed sampling rate of 1 kHz, with frequencies warped with this assumption, then the frequencies perceived in the data will be incorrect, leading to poor filter performance.
+
+Rather than have all the filtering and processing happen in the callback, the callback appended the data to a thread-safe queue, and a separate function was called every 10 milliseconds which would take the data from the queue and process it. Since there is a certain amount of context switching overhead involved with swapping between threads, running a longer computation less often leads to better performance, provided (as is the case here) that the buffering of data is not to the detriment of other parts of the program. 
+
+\section{Results and discussion}
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{figures/raw.pdf}
+    \caption{Raw, unfiltered data from analogue input}
+    \label{fig:raw}
+\end{figure}
+
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{figures/filtered.pdf}
+    \caption{Data filtered using a bandpass IIR filter}
+    \label{fig:filtered}
+\end{figure}
+
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{figures/sampling.pdf}
+    \caption{Time taken per sample}
+    \label{fig:sampling}
+\end{figure}
+
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{figures/uart.pdf}
+    \caption{Output from UART transmitter, versus input to UART receiver}
+    \label{fig:uart}
+\end{figure}
+
+As can be seen from Figure \ref{fig:raw}, there was a significant DC offset and drift in the raw data. This is entirely eliminated in Figure \ref{fig:filtered}, demonstrating the performance of the IIR filter. Unfortunately, the filter was not as responsive as one might hope, causing the lobing effect that can be seen in the plot. This delay can also be seen in Figure \ref{fig:uart}. 
+
+Figure \ref{fig:uart} shows how the transmitter sent its data (in this case, the letter \say{S}), and how the receiver saw that data. Marked on the plot are the bits of the UART frame.
+
+While it was important to measure the callback time, it can be seen from Figure \ref{fig:sampling} that the time taken was always far below the limit of 1 ms, with the longest period being just 30 \textmu s.
+
 \section{Conclusion}
 It was possible to send large amounts of data with no loss, albeit quite slowly. The IIR filter performed well, eliminating all environmental noise and providing a clean signal to the UART receiver, though there was a significant delay in the response that limited the baud rate.
-
-
 
 \end{multicols}
 \pagebreak

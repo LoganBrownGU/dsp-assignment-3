@@ -79,7 +79,6 @@ class Receiver():
             data = self.__processing_queue.pop()
     
     def __poll(self, data):
-
         try:
             start_time = time.time_ns()
             self.__processing_queue.append(data)
