@@ -36,8 +36,10 @@ To frame the data, UART (universal asynchronous receiver-transmitter) was chosen
 
 The \texttt{UART\_Tx} class allows the user to load an array of bytes, which are then \say{sent} automatically. The \texttt{UART\_Rx} class constantly listens for changes at 8 times the baud rate, and outputs a byte as soon as it determines that it has received one.
 
+2 stop bits, 8 data bits, and no parity bits (8N2) was used as the UART scheme.
+
 \section{Set up}
-The laser was aimed at a phototransistor which was set up in a voltage-divider configuration, as outlined in Figure \ref{fig:circuit},\ref{fig:dataflow}. An Arduino connected to a computer measured the voltage across the resistor. As only one Arduino was available, the same device sent the signal as received it, though the setup would work equally with two separate devices. 
+The laser was aimed at a phototransistor which was set up in a voltage-divider configuration, as outlined in Figure \ref{fig:circuit}, \ref{fig:dataflow}. An Arduino connected to a computer measured the voltage across the resistor. As only one Arduino was available, the same device sent the signal as received it, though the setup would work equally with two separate devices. 
 
 An FSK modulation scheme was used. A logic 0 corresponds to the laser being switched off, effectively 0 Hz, while a logic 1 corresponds to the laser being keyed on and off at a given frequency. This was chosen to be 100 Hz, as it would be significantly higher than any environmental optical and electronic noise, but low enough that it can be reliably sampled at 1000 Hz with minimal aliasing.
 
@@ -51,6 +53,14 @@ An FSK modulation scheme was used. A logic 0 corresponds to the laser being swit
     \includegraphics[width=\linewidth]{figures/circuit.pdf}
     \caption{Circuit diagram}
     \label{fig:circuit}
+\end{figure}
+
+\begin{figure}[H]
+    \includegraphics[width=\linewidth]{figures/above.jpg}
+    \includegraphics[width=\linewidth]{figures/laser.jpg}
+    \includegraphics[width=\linewidth]{figures/phototransistor.jpg}
+    \caption{Pictures of setup}
+    \label{fig:setup-photo}
 \end{figure}
 
 \section{Filtering}
@@ -97,7 +107,7 @@ Rather than have all the filtering and processing happen in the callback, the ca
 \end{figure}
 
 \begin{figure}[H]
-    \includegraphics[width=\linewidth]{figures/uart.pdf}
+    \includegraphics[width=\linewidth]{figures/uart_f.pdf}
     \caption{Output from UART transmitter, versus input to UART receiver}
     \label{fig:uart}
 \end{figure}
@@ -138,6 +148,15 @@ A video showing the realtime filtering can be found here: \href{https://youtu.be
 
 \subsection{config.py}
 \lstinputlisting[language=python]{../python/config.py}
+
+\subsection{large\_message.py}
+\lstinputlisting[language=python]{../python/large_message.py}
+
+\subsection{plot.py}
+\lstinputlisting[language=python]{../python/plot.py}
+
+\subsection{gather\_data.py}
+\lstinputlisting[language=python]{../python/gather_data.py}
 
 
 \end{document}
